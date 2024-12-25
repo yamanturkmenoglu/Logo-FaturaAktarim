@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
@@ -9,15 +11,17 @@ using DevExpress.XtraGrid;
 
 namespace Tesla_CanToptan
 {
-    public partial class Form1 : DevExpress.XtraBars.Ribbon.RibbonForm
+    public partial class Main : DevExpress.XtraBars.Ribbon.RibbonForm
     {
-        public Form1()
+        public Main()
         {
             InitializeComponent();
         }
-
+ SqlConnectionClass bgl = new SqlConnectionClass();
         private void Btn_DosayaSec_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
+            DeleteDataFromDatabase();
+
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
                 openFileDialog.Filter = "Text Files|*.bif";
@@ -29,11 +33,17 @@ namespace Tesla_CanToptan
 
                     try
                     {
+                        LB_DosyaAdı.Text = Path.GetFileName(filePath); 
+                        LB_Yol.Text = filePath;
                         string[] faturaVerisi = File.ReadAllLines(filePath, Encoding.GetEncoding("ISO-8859-9"));
                         List<Fatura> faturalar = ParseFaturalar(faturaVerisi);
-
-                        gridControl1.DataSource = faturalar;
+                      
+                        InsertDataIntoDatabase(faturalar);
+                       
+                        List<Fatura> faturalarFromDb = GetFaturalarFromDatabase();
+                        gridControl1.DataSource = faturalarFromDb;
                         gridControl1.ForceInitialize();
+                        LB_FaturaSayısı.Text = faturalarFromDb.Count.ToString();
                     }
                     catch (Exception ex)
                     {
@@ -81,7 +91,7 @@ namespace Tesla_CanToptan
                         CariKodu = line.Substring(27, 10).Trim(),
                         CariUnvan = line.Substring(38, 41).Trim(),
                         FaturaNumarasi = line.Substring(79, 16).Trim(),
-                        OncekiOdeme = ParseDecimal(line.Substring(108, 12).Trim()),
+                        ToplamIndirim = ParseDecimal(line.Substring(108, 12).Trim()),
                         OdemeDurumu = ParseInt(line.Substring(147, 1).Trim())
                     };
                 }
@@ -153,21 +163,132 @@ namespace Tesla_CanToptan
             return null;
         }
 
+        private void InsertDataIntoDatabase(List<Fatura> faturalar)
+        {
+            using (SqlConnection connection = bgl.baglanti())
+            {
+                foreach (var fatura in faturalar)
+                {
+                    // HRK.FaturaBasliklari tablosuna veri ekleme
+                    string insertFaturaBaslikQuery = @"
+                INSERT INTO HRK.FaturaBasliklari (TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, OdemeDurumu)
+                VALUES (@TarihSaat, @CariKodu, @CariUnvan, @FaturaNumarasi, @ToplamIndirim, @OdemeDurumu);
+                SELECT SCOPE_IDENTITY();";
+
+                    SqlCommand command = new SqlCommand(insertFaturaBaslikQuery, connection);
+                    command.Parameters.AddWithValue("@TarihSaat", fatura.TarihSaat ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@CariKodu", fatura.CariKodu);
+                    command.Parameters.AddWithValue("@CariUnvan", fatura.CariUnvan);
+                    command.Parameters.AddWithValue("@FaturaNumarasi", fatura.FaturaNumarasi);
+                    command.Parameters.AddWithValue("@ToplamIndirim", fatura.ToplamIndirim);
+                    command.Parameters.AddWithValue("@OdemeDurumu", fatura.OdemeDurumu);
+
+                    int faturaId = Convert.ToInt32(command.ExecuteScalar());
+
+                    // HRK.FaturaKalemleri tablosuna veri ekleme
+                    foreach (var kalem in fatura.Kalemler)
+                    {
+                        string insertKalemQuery = @"
+                    INSERT INTO HRK.FaturaKalemleri (FaturaId, UrunKodu, UrunAdi, Miktar, BirimFiyat, KDVOrani, KDVliBirimFiyat, ToplamTutar)
+                    VALUES (@FaturaId, @UrunKodu, @UrunAdi, @Miktar, @BirimFiyat, @KDVOrani, @KDVliBirimFiyat, @ToplamTutar);";
+
+                        SqlCommand kalemCommand = new SqlCommand(insertKalemQuery, connection);
+                        kalemCommand.Parameters.AddWithValue("@FaturaId", faturaId);
+                        kalemCommand.Parameters.AddWithValue("@UrunKodu", kalem.UrunKodu);
+                        kalemCommand.Parameters.AddWithValue("@UrunAdi", kalem.UrunAdi);
+                        kalemCommand.Parameters.AddWithValue("@Miktar", kalem.Miktar);
+                        kalemCommand.Parameters.AddWithValue("@BirimFiyat", kalem.BirimFiyat);
+                        kalemCommand.Parameters.AddWithValue("@KDVOrani", kalem.KDVOrani);
+                        kalemCommand.Parameters.AddWithValue("@KDVliBirimFiyat", kalem.KDVliBirimFiyat);
+                        kalemCommand.Parameters.AddWithValue("@ToplamTutar", kalem.ToplamTutar);
+
+                        kalemCommand.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+
+        private List<Fatura> GetFaturalarFromDatabase()
+        {
+            List<Fatura> faturalar = new List<Fatura>();
+
+            using (SqlConnection connection = bgl.baglanti())
+            {
+                string selectQuery = @"
+            SELECT FaturaId, TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, OdemeDurumu 
+            FROM HRK.FaturaBasliklari";
+
+                SqlCommand command = new SqlCommand(selectQuery, connection);
+                SqlDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    Fatura fatura = new Fatura
+                    {
+                        FaturaId = reader.GetInt32(0),
+                        TarihSaat = reader.IsDBNull(1) ? (DateTime?)null : reader.GetDateTime(1),
+                        CariKodu = reader.GetString(2),
+                        CariUnvan = reader.GetString(3),
+                        FaturaNumarasi = reader.GetString(4),
+                        ToplamIndirim = reader.GetDecimal(5),
+                        OdemeDurumu = reader.GetInt32(6),
+                        Kalemler = new List<FaturaKalemi>()
+                    };
+
+                    faturalar.Add(fatura);
+                }
+                reader.Close();
+
+                // Fatura kalemlerini ekleyelim
+                foreach (var fatura in faturalar)
+                {
+                    string selectKalemQuery = "SELECT * FROM HRK.FaturaKalemleri WHERE FaturaId = @FaturaId";
+                    SqlCommand kalemCommand = new SqlCommand(selectKalemQuery, connection);
+                    kalemCommand.Parameters.AddWithValue("@FaturaId", fatura.FaturaId);
+                    SqlDataReader kalemReader = kalemCommand.ExecuteReader();
+
+                    while (kalemReader.Read())
+                    {
+                        FaturaKalemi kalem = new FaturaKalemi
+                        {
+                            UrunKodu = kalemReader.GetString(2),
+                            UrunAdi = kalemReader.GetString(3),
+                            Miktar = kalemReader.GetDecimal(4),
+                            BirimFiyat = kalemReader.GetDecimal(5),
+                            KDVOrani = kalemReader.GetInt32(6),
+                            KDVliBirimFiyat = kalemReader.GetDecimal(7),
+                            ToplamTutar = kalemReader.GetDecimal(8)
+                        };
+
+                        fatura.Kalemler.Add(kalem);
+                    }
+                    kalemReader.Close();
+                }
+            }
+
+            return faturalar;
+        }
+
+
         private void Form1_Load(object sender, EventArgs e)
         {
             ConfigureGridControl();
+            DateTime DataSetDateTime = DateTime.Now;
+            LB_Tarih.Text = DataSetDateTime.ToString("dd.MM.yyyy HH:mm:ss");
+            
         }
 
         private void ConfigureGridControl()
         {
             GridView masterView = new GridView(gridControl1);
             gridControl1.MainView = masterView;
+       
 
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "TarihSaat", Caption = "Tarih Saat", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "CariKodu", Caption = "Müşteri Kod", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "CariUnvan", Caption = "Müşteri", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "FaturaNumarasi", Caption = "Fatura Numarası", Visible = true });
-            masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "OncekiOdeme", Caption = "Toplam İndirim", Visible = true });
+            masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "ToplamIndirim", Caption = "Toplam İndirim", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "OdemeDurumu", Caption = "Durum", Visible = true });
 
             GridView detailView = new GridView(gridControl1);
@@ -226,30 +347,11 @@ namespace Tesla_CanToptan
             // Grid görünüm ayarları
             gridControl1.LookAndFeel.UseDefaultLookAndFeel = false;
             gridControl1.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
-
-        }
-
-        private void MasterView_MasterRowGetChildList(object sender, MasterRowGetChildListEventArgs e)
-        {
-            GridView view = sender as GridView;
-            List<Fatura> faturalar = (List<Fatura>)gridControl1.DataSource;
-
-            Fatura selectedFatura = faturalar[e.RowHandle];
-            e.ChildList = selectedFatura.Kalemler;
         }
 
         private void MasterView_MasterRowEmpty(object sender, MasterRowEmptyEventArgs e)
         {
-            GridView view = sender as GridView;
-            List<Fatura> faturalar = (List<Fatura>)gridControl1.DataSource;
-
-            Fatura selectedFatura = faturalar[e.RowHandle];
-            e.IsEmpty = selectedFatura.Kalemler.Count == 0;
-        }
-
-        private void MasterView_MasterRowGetRelationName(object sender, MasterRowGetRelationNameEventArgs e)
-        {
-            e.RelationName = "Kalemler";
+            e.IsEmpty = false;
         }
 
         private void MasterView_MasterRowGetRelationCount(object sender, MasterRowGetRelationCountEventArgs e)
@@ -257,43 +359,104 @@ namespace Tesla_CanToptan
             e.RelationCount = 1;
         }
 
-        private void Btn_Temizle_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        private void MasterView_MasterRowGetRelationName(object sender, MasterRowGetRelationNameEventArgs e)
         {
-
-            // Veri kaynağını sıfırla
-            gridControl1.DataSource = null;
-
-            // Boş bir liste ata
-            gridControl1.DataSource = new List<Fatura>();
-
-            // GridControl'i yeniden başlat
-            gridControl1.ForceInitialize();
-
-            // Kullanıcıya bilgilendirme mesajı
-            XtraMessageBox.Show("Tablo temizlendi.");
+            e.RelationName = "Kalemler";
         }
 
+        private void MasterView_MasterRowGetChildList(object sender, MasterRowGetChildListEventArgs e)
+        {
+            GridView view = sender as GridView;
+
+           
+            Fatura selectedFatura = (Fatura)view.GetRow(e.RowHandle);
+
+           
+            e.ChildList = selectedFatura?.Kalemler;
+        }
+
+
+        private void Btn_Temizle_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            try
+            {
+                DeleteDataFromDatabase();
+
+                XtraMessageBox.Show("Tablo temizlendi ve veritabanı sıfırlandı.");
+                }
+                catch (Exception ex)
+                {
+                    XtraMessageBox.Show($"Hata: {ex.Message}");
+                }
+        }
+private void DeleteDataFromDatabase()
+{
+    using (SqlConnection connection = bgl.baglanti())
+    {
+        string disableForeignKeyQuery = "ALTER TABLE HRK.FaturaBasliklari NOCHECK CONSTRAINT ALL";
+        SqlCommand disableFKCommand = new SqlCommand(disableForeignKeyQuery, connection);
+        disableFKCommand.ExecuteNonQuery();
+
+        string deleteKalemQuery = "DELETE FROM HRK.FaturaKalemleri";
+        SqlCommand kalemCommand = new SqlCommand(deleteKalemQuery, connection);
+        kalemCommand.ExecuteNonQuery();
+
+        string deleteFaturaQuery = "DELETE FROM HRK.FaturaBasliklari";
+        SqlCommand faturaCommand = new SqlCommand(deleteFaturaQuery, connection);
+        faturaCommand.ExecuteNonQuery();
+
+        string enableForeignKeyQuery = "ALTER TABLE HRK.FaturaBasliklari CHECK CONSTRAINT ALL";
+        SqlCommand enableFKCommand = new SqlCommand(enableForeignKeyQuery, connection);
+        enableFKCommand.ExecuteNonQuery();
+
+        string resetIdentityQuery1 = "DBCC CHECKIDENT ('HRK.FaturaKalemleri', RESEED, 0)";
+        SqlCommand resetIdentityCommand1 = new SqlCommand(resetIdentityQuery1, connection);
+        resetIdentityCommand1.ExecuteNonQuery();
+
+        string resetIdentityQuery2 = "DBCC CHECKIDENT ('HRK.FaturaBasliklari', RESEED, 0)";
+        SqlCommand resetIdentityCommand2 = new SqlCommand(resetIdentityQuery2, connection);
+        resetIdentityCommand2.ExecuteNonQuery();
+    }
+
+    LB_DosyaAdı.Text = null;
+    LB_Yol.Text = null;
+    LB_FaturaSayısı.Text = null;
+
+    gridControl1.DataSource = null;
+    gridControl1.DataSource = new List<Fatura>();
+    gridControl1.ForceInitialize();
+}
+        Frm_SatışTanımları frm;
+        private void Btn_SatisTanımları_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            frm = new Frm_SatışTanımları();
+            frm.Show();
+        }
     }
 
     public class Fatura
     {
+        public int FaturaId { get; set; }
         public DateTime? TarihSaat { get; set; }
         public string CariKodu { get; set; }
         public string CariUnvan { get; set; }
         public string FaturaNumarasi { get; set; }
-        public decimal OncekiOdeme { get; set; }
+        public decimal ToplamIndirim { get; set; }
         public int OdemeDurumu { get; set; }
         public List<FaturaKalemi> Kalemler { get; set; } = new List<FaturaKalemi>();
     }
 
     public class FaturaKalemi
     {
+        public int KalemId { get; set; }
+        public int FaturaId { get; set; }
         public string UrunKodu { get; set; }
         public string UrunAdi { get; set; }
+        public decimal Miktar { get; set; }
         public decimal BirimFiyat { get; set; }
         public int KDVOrani { get; set; }
         public decimal KDVliBirimFiyat { get; set; }
-        public decimal Miktar { get; set; }
         public decimal ToplamTutar { get; set; }
     }
+
 }
