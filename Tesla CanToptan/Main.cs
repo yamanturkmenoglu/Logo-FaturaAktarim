@@ -169,9 +169,9 @@ namespace Tesla_CanToptan
             {
                 foreach (var fatura in faturalar)
                 {
-                    // HRK.FaturaBasliklari tablosuna veri ekleme
+                    // [HRK.FaturaBasliklari] tablosuna veri ekleme
                     string insertFaturaBaslikQuery = @"
-                INSERT INTO HRK.FaturaBasliklari (TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, OdemeDurumu)
+                INSERT INTO [HRK.FaturaBasliklari] (TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, OdemeDurumu)
                 VALUES (@TarihSaat, @CariKodu, @CariUnvan, @FaturaNumarasi, @ToplamIndirim, @OdemeDurumu);
                 SELECT SCOPE_IDENTITY();";
 
@@ -185,11 +185,11 @@ namespace Tesla_CanToptan
 
                     int faturaId = Convert.ToInt32(command.ExecuteScalar());
 
-                    // HRK.FaturaKalemleri tablosuna veri ekleme
+                    // [HRK.FaturaKalemleri] tablosuna veri ekleme
                     foreach (var kalem in fatura.Kalemler)
                     {
                         string insertKalemQuery = @"
-                    INSERT INTO HRK.FaturaKalemleri (FaturaId, UrunKodu, UrunAdi, Miktar, BirimFiyat, KDVOrani, KDVliBirimFiyat, ToplamTutar)
+                    INSERT INTO [HRK.FaturaKalemleri] (FaturaId, UrunKodu, UrunAdi, Miktar, BirimFiyat, KDVOrani, KDVliBirimFiyat, ToplamTutar)
                     VALUES (@FaturaId, @UrunKodu, @UrunAdi, @Miktar, @BirimFiyat, @KDVOrani, @KDVliBirimFiyat, @ToplamTutar);";
 
                         SqlCommand kalemCommand = new SqlCommand(insertKalemQuery, connection);
@@ -216,7 +216,7 @@ namespace Tesla_CanToptan
             {
                 string selectQuery = @"
             SELECT FaturaId, TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, OdemeDurumu 
-            FROM HRK.FaturaBasliklari";
+            FROM [HRK.FaturaBasliklari]";
 
                 SqlCommand command = new SqlCommand(selectQuery, connection);
                 SqlDataReader reader = command.ExecuteReader();
@@ -242,7 +242,7 @@ namespace Tesla_CanToptan
                 // Fatura kalemlerini ekleyelim
                 foreach (var fatura in faturalar)
                 {
-                    string selectKalemQuery = "SELECT * FROM HRK.FaturaKalemleri WHERE FaturaId = @FaturaId";
+                    string selectKalemQuery = "SELECT * FROM [HRK.FaturaKalemleri] WHERE FaturaId = @FaturaId";
                     SqlCommand kalemCommand = new SqlCommand(selectKalemQuery, connection);
                     kalemCommand.Parameters.AddWithValue("@FaturaId", fatura.FaturaId);
                     SqlDataReader kalemReader = kalemCommand.ExecuteReader();
@@ -393,27 +393,27 @@ private void DeleteDataFromDatabase()
 {
     using (SqlConnection connection = bgl.baglanti())
     {
-        string disableForeignKeyQuery = "ALTER TABLE HRK.FaturaBasliklari NOCHECK CONSTRAINT ALL";
+        string disableForeignKeyQuery = "ALTER TABLE [HRK.FaturaBasliklari] NOCHECK CONSTRAINT ALL";
         SqlCommand disableFKCommand = new SqlCommand(disableForeignKeyQuery, connection);
         disableFKCommand.ExecuteNonQuery();
 
-        string deleteKalemQuery = "DELETE FROM HRK.FaturaKalemleri";
+        string deleteKalemQuery = "DELETE FROM [HRK.FaturaKalemleri]";
         SqlCommand kalemCommand = new SqlCommand(deleteKalemQuery, connection);
         kalemCommand.ExecuteNonQuery();
 
-        string deleteFaturaQuery = "DELETE FROM HRK.FaturaBasliklari";
+        string deleteFaturaQuery = "DELETE FROM [HRK.FaturaBasliklari]";
         SqlCommand faturaCommand = new SqlCommand(deleteFaturaQuery, connection);
         faturaCommand.ExecuteNonQuery();
 
-        string enableForeignKeyQuery = "ALTER TABLE HRK.FaturaBasliklari CHECK CONSTRAINT ALL";
+        string enableForeignKeyQuery = "ALTER TABLE [HRK.FaturaBasliklari] CHECK CONSTRAINT ALL";
         SqlCommand enableFKCommand = new SqlCommand(enableForeignKeyQuery, connection);
         enableFKCommand.ExecuteNonQuery();
 
-        string resetIdentityQuery1 = "DBCC CHECKIDENT ('HRK.FaturaKalemleri', RESEED, 0)";
+        string resetIdentityQuery1 = "DBCC CHECKIDENT ('[HRK.FaturaKalemleri]', RESEED, 0)";
         SqlCommand resetIdentityCommand1 = new SqlCommand(resetIdentityQuery1, connection);
         resetIdentityCommand1.ExecuteNonQuery();
 
-        string resetIdentityQuery2 = "DBCC CHECKIDENT ('HRK.FaturaBasliklari', RESEED, 0)";
+        string resetIdentityQuery2 = "DBCC CHECKIDENT ('[HRK.FaturaBasliklari]', RESEED, 0)";
         SqlCommand resetIdentityCommand2 = new SqlCommand(resetIdentityQuery2, connection);
         resetIdentityCommand2.ExecuteNonQuery();
     }

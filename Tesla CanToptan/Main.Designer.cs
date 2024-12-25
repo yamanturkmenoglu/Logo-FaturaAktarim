@@ -73,7 +73,7 @@ namespace Tesla_CanToptan
             // 
             // Btn_DosayaSec
             // 
-            this.Btn_DosayaSec.Caption = "Doasya Aktar";
+            this.Btn_DosayaSec.Caption = "Dosya Aktar";
             this.Btn_DosayaSec.Id = 1;
             this.Btn_DosayaSec.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("Btn_DosayaSec.ImageOptions.LargeImage")));
             this.Btn_DosayaSec.Name = "Btn_DosayaSec";
@@ -98,7 +98,7 @@ namespace Tesla_CanToptan
             // 
             this.Btn_SatisTanımları.Caption = "Satış Tanımları ";
             this.Btn_SatisTanımları.Id = 4;
-            this.Btn_SatisTanımları.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("barButtonItem1.ImageOptions.LargeImage")));
+            this.Btn_SatisTanımları.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("Btn_SatisTanımları.ImageOptions.LargeImage")));
             this.Btn_SatisTanımları.Name = "Btn_SatisTanımları";
             this.Btn_SatisTanımları.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.Btn_SatisTanımları_ItemClick);
             // 
@@ -252,6 +252,7 @@ namespace Tesla_CanToptan
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.gridControl1);
             this.Controls.Add(this.ribbonControl1);
+            this.IconOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("Main.IconOptions.LargeImage")));
             this.IsMdiContainer = true;
             this.Name = "Main";
             this.Ribbon = this.ribbonControl1;
