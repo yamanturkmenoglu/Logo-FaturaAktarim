@@ -91,6 +91,7 @@ namespace Tesla_CanToptan
                         CariKodu = line.Substring(27, 10).Trim(),
                         CariUnvan = line.Substring(38, 41).Trim(),
                         FaturaNumarasi = line.Substring(79, 16).Trim(),
+                        ToplamTutar = ParseDecimal(line.Substring(95, 12).Trim()),
                         ToplamIndirim = ParseDecimal(line.Substring(108, 12).Trim()),
                         OdemeDurumu = ParseInt(line.Substring(147, 1).Trim())
                     };
@@ -171,9 +172,12 @@ namespace Tesla_CanToptan
                 {
                     // [HRK.FaturaBasliklari] tablosuna veri ekleme
                     string insertFaturaBaslikQuery = @"
-                INSERT INTO [HRK.FaturaBasliklari] (TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, OdemeDurumu)
-                VALUES (@TarihSaat, @CariKodu, @CariUnvan, @FaturaNumarasi, @ToplamIndirim, @OdemeDurumu);
-                SELECT SCOPE_IDENTITY();";
+    INSERT INTO [HRK.FaturaBasliklari] 
+    (TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, BayiKarKDV, FirmaKarKDV, ToplamTutar, OdemeDurumu)
+    VALUES 
+    (@TarihSaat, @CariKodu, @CariUnvan, @FaturaNumarasi, @ToplamIndirim, @BayiKarKDV, @FirmaKarKDV, @ToplamTutar, @OdemeDurumu);
+    SELECT SCOPE_IDENTITY();";
+
 
                     SqlCommand command = new SqlCommand(insertFaturaBaslikQuery, connection);
                     command.Parameters.AddWithValue("@TarihSaat", fatura.TarihSaat ?? (object)DBNull.Value);
@@ -181,6 +185,9 @@ namespace Tesla_CanToptan
                     command.Parameters.AddWithValue("@CariUnvan", fatura.CariUnvan);
                     command.Parameters.AddWithValue("@FaturaNumarasi", fatura.FaturaNumarasi);
                     command.Parameters.AddWithValue("@ToplamIndirim", fatura.ToplamIndirim);
+                    command.Parameters.AddWithValue("@BayiKarKDV", DBNull.Value);
+                    command.Parameters.AddWithValue("@FirmaKarKDV", DBNull.Value);
+                    command.Parameters.AddWithValue("@ToplamTutar", fatura.ToplamTutar);
                     command.Parameters.AddWithValue("@OdemeDurumu", fatura.OdemeDurumu);
 
                     int faturaId = Convert.ToInt32(command.ExecuteScalar());
@@ -215,7 +222,7 @@ namespace Tesla_CanToptan
             using (SqlConnection connection = bgl.baglanti())
             {
                 string selectQuery = @"
-            SELECT FaturaId, TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, OdemeDurumu 
+            SELECT FaturaId, TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, ToplamTutar, OdemeDurumu 
             FROM [HRK.FaturaBasliklari]";
 
                 SqlCommand command = new SqlCommand(selectQuery, connection);
@@ -231,7 +238,8 @@ namespace Tesla_CanToptan
                         CariUnvan = reader.GetString(3),
                         FaturaNumarasi = reader.GetString(4),
                         ToplamIndirim = reader.GetDecimal(5),
-                        OdemeDurumu = reader.GetInt32(6),
+                        ToplamTutar = reader.GetDecimal(6),
+                        OdemeDurumu = reader.GetInt32(7),
                         Kalemler = new List<FaturaKalemi>()
                     };
 
@@ -289,6 +297,7 @@ namespace Tesla_CanToptan
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "CariUnvan", Caption = "Müşteri", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "FaturaNumarasi", Caption = "Fatura Numarası", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "ToplamIndirim", Caption = "Toplam İndirim", Visible = true });
+            masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "ToplamTutar", Caption = "Toplam Tutar", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "OdemeDurumu", Caption = "Durum", Visible = true });
 
             GridView detailView = new GridView(gridControl1);
@@ -442,6 +451,7 @@ private void DeleteDataFromDatabase()
         public string CariUnvan { get; set; }
         public string FaturaNumarasi { get; set; }
         public decimal ToplamIndirim { get; set; }
+        public decimal ToplamTutar { get; set; }
         public int OdemeDurumu { get; set; }
         public List<FaturaKalemi> Kalemler { get; set; } = new List<FaturaKalemi>();
     }
