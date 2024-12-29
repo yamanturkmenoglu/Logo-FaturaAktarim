@@ -8,6 +8,11 @@ using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraGrid;
+using System.Net.Http;
+using Newtonsoft.Json;
+using System.Linq;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
 
 namespace Tesla_CanToptan
 {
@@ -17,7 +22,9 @@ namespace Tesla_CanToptan
         {
             InitializeComponent();
         }
- SqlConnectionClass bgl = new SqlConnectionClass();
+        SqlConnectionClass bgl = new SqlConnectionClass();
+
+
         private void Btn_DosayaSec_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             DeleteDataFromDatabase();
@@ -33,13 +40,14 @@ namespace Tesla_CanToptan
 
                     try
                     {
-                        LB_DosyaAdı.Text = Path.GetFileName(filePath); 
+                        LB_DosyaAdı.Text = Path.GetFileName(filePath);
                         LB_Yol.Text = filePath;
                         string[] faturaVerisi = File.ReadAllLines(filePath, Encoding.GetEncoding("ISO-8859-9"));
                         List<Fatura> faturalar = ParseFaturalar(faturaVerisi);
-                      
+
                         InsertDataIntoDatabase(faturalar);
-                       
+                        ExecuteProcedures();
+                     
                         List<Fatura> faturalarFromDb = GetFaturalarFromDatabase();
                         gridControl1.DataSource = faturalarFromDb;
                         gridControl1.ForceInitialize();
@@ -93,7 +101,6 @@ namespace Tesla_CanToptan
                         FaturaNumarasi = line.Substring(79, 16).Trim(),
                         ToplamTutar = ParseDecimal(line.Substring(95, 12).Trim()),
                         ToplamIndirim = ParseDecimal(line.Substring(108, 12).Trim()),
-                        OdemeDurumu = ParseInt(line.Substring(147, 1).Trim())
                     };
                 }
                 else
@@ -173,9 +180,9 @@ namespace Tesla_CanToptan
                     // [HRK.FaturaBasliklari] tablosuna veri ekleme
                     string insertFaturaBaslikQuery = @"
     INSERT INTO [HRK.FaturaBasliklari] 
-    (TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, BayiKarKDV, FirmaKarKDV, ToplamTutar, OdemeDurumu)
+    (TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, BayiKarKDV, FirmaKarKDV, ToplamTutar)
     VALUES 
-    (@TarihSaat, @CariKodu, @CariUnvan, @FaturaNumarasi, @ToplamIndirim, @BayiKarKDV, @FirmaKarKDV, @ToplamTutar, @OdemeDurumu);
+    (@TarihSaat, @CariKodu, @CariUnvan, @FaturaNumarasi, @ToplamIndirim, @BayiKarKDV, @FirmaKarKDV, @ToplamTutar);
     SELECT SCOPE_IDENTITY();";
 
 
@@ -188,7 +195,6 @@ namespace Tesla_CanToptan
                     command.Parameters.AddWithValue("@BayiKarKDV", DBNull.Value);
                     command.Parameters.AddWithValue("@FirmaKarKDV", DBNull.Value);
                     command.Parameters.AddWithValue("@ToplamTutar", fatura.ToplamTutar);
-                    command.Parameters.AddWithValue("@OdemeDurumu", fatura.OdemeDurumu);
 
                     int faturaId = Convert.ToInt32(command.ExecuteScalar());
 
@@ -222,7 +228,7 @@ namespace Tesla_CanToptan
             using (SqlConnection connection = bgl.baglanti())
             {
                 string selectQuery = @"
-            SELECT FaturaId, TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, ToplamTutar, OdemeDurumu 
+            SELECT FaturaId, TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, ToplamTutar, BayiKarKDV, FirmaKarKDV
             FROM [HRK.FaturaBasliklari]";
 
                 SqlCommand command = new SqlCommand(selectQuery, connection);
@@ -239,7 +245,9 @@ namespace Tesla_CanToptan
                         FaturaNumarasi = reader.GetString(4),
                         ToplamIndirim = reader.GetDecimal(5),
                         ToplamTutar = reader.GetDecimal(6),
-                        OdemeDurumu = reader.GetInt32(7),
+                        BayiKarKDV = reader.GetDecimal(7),
+                        FirmaKarKDV = reader.GetDecimal(8),
+
                         Kalemler = new List<FaturaKalemi>()
                     };
 
@@ -266,6 +274,7 @@ namespace Tesla_CanToptan
                             KDVOrani = kalemReader.GetInt32(6),
                             KDVliBirimFiyat = kalemReader.GetDecimal(7),
                             ToplamTutar = kalemReader.GetDecimal(8)
+
                         };
 
                         fatura.Kalemler.Add(kalem);
@@ -283,14 +292,14 @@ namespace Tesla_CanToptan
             ConfigureGridControl();
             DateTime DataSetDateTime = DateTime.Now;
             LB_Tarih.Text = DataSetDateTime.ToString("dd.MM.yyyy HH:mm:ss");
-            
+
         }
 
         private void ConfigureGridControl()
         {
             GridView masterView = new GridView(gridControl1);
             gridControl1.MainView = masterView;
-       
+
 
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "TarihSaat", Caption = "Tarih Saat", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "CariKodu", Caption = "Müşteri Kod", Visible = true });
@@ -298,7 +307,10 @@ namespace Tesla_CanToptan
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "FaturaNumarasi", Caption = "Fatura Numarası", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "ToplamIndirim", Caption = "Toplam İndirim", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "ToplamTutar", Caption = "Toplam Tutar", Visible = true });
-            masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "OdemeDurumu", Caption = "Durum", Visible = true });
+            masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "BayiKarKDV", Caption = "Bayi Kar Kdv", Visible = true });
+            masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "FirmaKarKDV", Caption = "Firma Kar Kav", Visible = true });
+
+            //masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "OdemeDurumu", Caption = "Durum", Visible = true });
 
             GridView detailView = new GridView(gridControl1);
             detailView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "UrunKodu", Caption = "Malzeme Kodu", Visible = true });
@@ -377,10 +389,10 @@ namespace Tesla_CanToptan
         {
             GridView view = sender as GridView;
 
-           
+
             Fatura selectedFatura = (Fatura)view.GetRow(e.RowHandle);
 
-           
+
             e.ChildList = selectedFatura?.Kalemler;
         }
 
@@ -392,81 +404,219 @@ namespace Tesla_CanToptan
                 DeleteDataFromDatabase();
 
                 XtraMessageBox.Show("Tablo temizlendi ve veritabanı sıfırlandı.");
-                }
-                catch (Exception ex)
-                {
-                    XtraMessageBox.Show($"Hata: {ex.Message}");
-                }
+            }
+            catch (Exception ex)
+            {
+                XtraMessageBox.Show($"Hata: {ex.Message}");
+            }
         }
-private void DeleteDataFromDatabase()
-{
-    using (SqlConnection connection = bgl.baglanti())
-    {
-        string disableForeignKeyQuery = "ALTER TABLE [HRK.FaturaBasliklari] NOCHECK CONSTRAINT ALL";
-        SqlCommand disableFKCommand = new SqlCommand(disableForeignKeyQuery, connection);
-        disableFKCommand.ExecuteNonQuery();
+        private void DeleteDataFromDatabase()
+        {
+            using (SqlConnection connection = bgl.baglanti())
+            {
+                string disableForeignKeyQuery = "ALTER TABLE [HRK.FaturaBasliklari] NOCHECK CONSTRAINT ALL";
+                SqlCommand disableFKCommand = new SqlCommand(disableForeignKeyQuery, connection);
+                disableFKCommand.ExecuteNonQuery();
 
-        string deleteKalemQuery = "DELETE FROM [HRK.FaturaKalemleri]";
-        SqlCommand kalemCommand = new SqlCommand(deleteKalemQuery, connection);
-        kalemCommand.ExecuteNonQuery();
+                string deleteKalemQuery = "DELETE FROM [HRK.FaturaKalemleri]";
+                SqlCommand kalemCommand = new SqlCommand(deleteKalemQuery, connection);
+                kalemCommand.ExecuteNonQuery();
 
-        string deleteFaturaQuery = "DELETE FROM [HRK.FaturaBasliklari]";
-        SqlCommand faturaCommand = new SqlCommand(deleteFaturaQuery, connection);
-        faturaCommand.ExecuteNonQuery();
+                string deleteFaturaQuery = "DELETE FROM [HRK.FaturaBasliklari]";
+                SqlCommand faturaCommand = new SqlCommand(deleteFaturaQuery, connection);
+                faturaCommand.ExecuteNonQuery();
 
-        string enableForeignKeyQuery = "ALTER TABLE [HRK.FaturaBasliklari] CHECK CONSTRAINT ALL";
-        SqlCommand enableFKCommand = new SqlCommand(enableForeignKeyQuery, connection);
-        enableFKCommand.ExecuteNonQuery();
+                string enableForeignKeyQuery = "ALTER TABLE [HRK.FaturaBasliklari] CHECK CONSTRAINT ALL";
+                SqlCommand enableFKCommand = new SqlCommand(enableForeignKeyQuery, connection);
+                enableFKCommand.ExecuteNonQuery();
 
-        string resetIdentityQuery1 = "DBCC CHECKIDENT ('[HRK.FaturaKalemleri]', RESEED, 0)";
-        SqlCommand resetIdentityCommand1 = new SqlCommand(resetIdentityQuery1, connection);
-        resetIdentityCommand1.ExecuteNonQuery();
+                string resetIdentityQuery1 = "DBCC CHECKIDENT ('[HRK.FaturaKalemleri]', RESEED, 0)";
+                SqlCommand resetIdentityCommand1 = new SqlCommand(resetIdentityQuery1, connection);
+                resetIdentityCommand1.ExecuteNonQuery();
 
-        string resetIdentityQuery2 = "DBCC CHECKIDENT ('[HRK.FaturaBasliklari]', RESEED, 0)";
-        SqlCommand resetIdentityCommand2 = new SqlCommand(resetIdentityQuery2, connection);
-        resetIdentityCommand2.ExecuteNonQuery();
-    }
+                string resetIdentityQuery2 = "DBCC CHECKIDENT ('[HRK.FaturaBasliklari]', RESEED, 0)";
+                SqlCommand resetIdentityCommand2 = new SqlCommand(resetIdentityQuery2, connection);
+                resetIdentityCommand2.ExecuteNonQuery();
+            }
 
-    LB_DosyaAdı.Text = null;
-    LB_Yol.Text = null;
-    LB_FaturaSayısı.Text = null;
+            LB_DosyaAdı.Text = null;
+            LB_Yol.Text = null;
+            LB_FaturaSayısı.Text = null;
 
-    gridControl1.DataSource = null;
-    gridControl1.DataSource = new List<Fatura>();
-    gridControl1.ForceInitialize();
-}
+            gridControl1.DataSource = null;
+            gridControl1.DataSource = new List<Fatura>();
+            gridControl1.ForceInitialize();
+        }
+        private void ExecuteProcedures()
+        {
+            using (SqlConnection connection = bgl.baglanti())
+            {
+                string[] procedures = new string[]
+                {
+            "EXEC GuncelleIndirimliBirimFiyatlar",
+            "EXEC HesaplaTümFaturalarBayiKarKDV",
+            "EXEC UpdateBirimFiyat",
+            "EXEC HesaplaTümFaturalarFirmaKarKDV"
+                };
+
+                foreach (var procedure in procedures)
+                {
+                    SqlCommand command = new SqlCommand(procedure, connection);
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+
         Frm_SatışTanımları frm;
         private void Btn_SatisTanımları_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             frm = new Frm_SatışTanımları();
             frm.Show();
         }
-    }
 
-    public class Fatura
-    {
-        public int FaturaId { get; set; }
-        public DateTime? TarihSaat { get; set; }
-        public string CariKodu { get; set; }
-        public string CariUnvan { get; set; }
-        public string FaturaNumarasi { get; set; }
-        public decimal ToplamIndirim { get; set; }
-        public decimal ToplamTutar { get; set; }
-        public int OdemeDurumu { get; set; }
-        public List<FaturaKalemi> Kalemler { get; set; } = new List<FaturaKalemi>();
-    }
 
-    public class FaturaKalemi
-    {
-        public int KalemId { get; set; }
-        public int FaturaId { get; set; }
-        public string UrunKodu { get; set; }
-        public string UrunAdi { get; set; }
-        public decimal Miktar { get; set; }
-        public decimal BirimFiyat { get; set; }
-        public int KDVOrani { get; set; }
-        public decimal KDVliBirimFiyat { get; set; }
-        public decimal ToplamTutar { get; set; }
-    }
+        public class Fatura
+        {
+            public int FaturaId { get; set; }
+            public DateTime? TarihSaat { get; set; }
+            public string CariKodu { get; set; }
+            public string CariUnvan { get; set; }
+            public string FaturaNumarasi { get; set; }
+            public decimal ToplamIndirim { get; set; }
+            public decimal ToplamTutar { get; set; }
+            public decimal BayiKarKDV { get; set; }
+            public decimal FirmaKarKDV { get; set; }
+            public List<FaturaKalemi> Kalemler { get; set; } = new List<FaturaKalemi>();
+        }
 
+        public class FaturaKalemi
+        {
+            public int KalemId { get; set; }
+            public int FaturaId { get; set; }
+            public string UrunKodu { get; set; }
+            public string UrunAdi { get; set; }
+            public decimal Miktar { get; set; }
+            public decimal BirimFiyat { get; set; }
+            public int KDVOrani { get; set; }
+            public decimal KDVliBirimFiyat { get; set; }
+            public decimal ToplamTutar { get; set; }
+        }
+
+        private async void Btn_LogoAktar_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            try
+            {
+                // Token al
+                string token = await GetAccessTokenAsync();
+                MessageBox.Show("Token alındı: " + token, "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                // Fatura örneği oluştur
+                var fatura = new Fatura
+                {
+                    TarihSaat = DateTime.Now,
+                    CariKodu = "040020561",
+                    FaturaNumarasi = "FAT-001",
+                    BayiKarKDV = 100,
+                    FirmaKarKDV = 50,
+                    Kalemler = new List<FaturaKalemi>
+            {
+                new FaturaKalemi { UrunKodu = "PLRC", Miktar = 2, BirimFiyat = 50 },
+                new FaturaKalemi { UrunKodu = "MUARCB", Miktar = 1, BirimFiyat = 100 }
+            }
+                };
+
+                // Faturayı API'ye aktar
+                await PostFaturaAsync(token, fatura);
+
+                MessageBox.Show("Fatura başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Hata: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async Task<string> GetAccessTokenAsync()
+        {
+            using (var client = new HttpClient())
+            {
+                var url = "http://192.168.1.103:3000/api/v1/token";
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                    "TUVGQVBFWDpGWEh4VGV4NThWd0pwbXNaSC9sSHVybkQ1elAwWVo3Tm14M0xZaDF1SFVvPQ==");
+
+                // İçerik tipini body'de belirt
+                var body = new StringContent("grant_type=password&username=LOGO&firmno=24&password=LOGO", Encoding.UTF8, "application/x-www-form-urlencoded");
+                var response = await client.PostAsync(url, body);
+                response.EnsureSuccessStatusCode();
+
+                var responseBody = await response.Content.ReadAsStringAsync();
+                dynamic json = JsonConvert.DeserializeObject(responseBody);
+                return json.access_token;
+            }
+        }
+
+        private async Task PostFaturaAsync(string token, Fatura fatura)
+        {
+            using (var client = new HttpClient())
+            {
+                var url = "http://192.168.1.103:3000/api/v1/salesInvoices";
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var items = new List<object>();
+
+                foreach (var kalem in fatura.Kalemler)
+                {
+                    items.Add(new
+                    {
+                        TYPE = "0",
+                        MASTER_CODE = kalem.UrunKodu,
+                        QUANTITY = kalem.Miktar,
+                        PRICE = kalem.BirimFiyat,
+                        UNIT_CODE = "ADET"
+                    });
+                }
+
+                // Sabit iki hizmet
+                items.Add(new
+                {
+                    TYPE = "4",
+                    MASTER_CODE = Properties.Settings.Default.BayiKodu,
+                    QUANTITY = "1",
+                    PRICE = fatura.BayiKarKDV,
+                    UNIT_CODE = "ADET"
+                });
+
+                items.Add(new
+                {
+                    TYPE = "4",
+                    MASTER_CODE = Properties.Settings.Default.FirmaKodu,
+                    QUANTITY = "1",
+                    PRICE = fatura.FirmaKarKDV,
+                    UNIT_CODE = "ADET"
+                });
+
+                var body = new
+                {
+                    TYPE = "8",
+                    NUMBER = fatura.FaturaNumarasi,
+                    DATE = fatura.TarihSaat,
+                    ARP_CODE = fatura.CariKodu,
+                    CURRSEL_TOTALS = "1",
+                    EINVOICE = "2",
+                    PROFILE_ID = "2",
+                    EINVOICE_TYPE = "2",
+                    EARCHIVEDETR_SENDMOD = "2",
+                    EARCHIVEDETR_INTPAYMENTTYPE = "4",
+                    TRANSACTIONS = new { items }
+                };
+
+                // İçeriği JSON formatında belirt
+                var content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
+                var response = await client.PostAsync(url, content);
+                response.EnsureSuccessStatusCode();
+            }
+        }
+
+
+    }
 }

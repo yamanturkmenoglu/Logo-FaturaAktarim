@@ -85,6 +85,7 @@ namespace Tesla_CanToptan
             this.Btn_LogoAktar.Id = 2;
             this.Btn_LogoAktar.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("Btn_LogoAktar.ImageOptions.LargeImage")));
             this.Btn_LogoAktar.Name = "Btn_LogoAktar";
+            this.Btn_LogoAktar.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.Btn_LogoAktar_ItemClick);
             // 
             // Btn_Temizle
             // 
