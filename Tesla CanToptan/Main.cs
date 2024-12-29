@@ -23,8 +23,9 @@ namespace Tesla_CanToptan
             InitializeComponent();
         }
         SqlConnectionClass bgl = new SqlConnectionClass();
+        private List<Fatura> faturalar = new List<Fatura>();
 
-
+        
         private void Btn_DosayaSec_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             DeleteDataFromDatabase();
@@ -43,15 +44,21 @@ namespace Tesla_CanToptan
                         LB_DosyaAdı.Text = Path.GetFileName(filePath);
                         LB_Yol.Text = filePath;
                         string[] faturaVerisi = File.ReadAllLines(filePath, Encoding.GetEncoding("ISO-8859-9"));
-                        List<Fatura> faturalar = ParseFaturalar(faturaVerisi);
+                        faturalar = ParseFaturalar(faturaVerisi);  // Assign parsed invoices to the class-level variable
 
                         InsertDataIntoDatabase(faturalar);
-                        ExecuteProcedures();
-                     
-                        List<Fatura> faturalarFromDb = GetFaturalarFromDatabase();
-                        gridControl1.DataSource = faturalarFromDb;
+                        ExecuteProcedures();  // Execute any necessary database procedures
+
+                        // Now retrieve the updated data from the database
+                        List<Fatura> updatedFaturalarFromDb = GetFaturalarFromDatabase();
+
+                        // Update the grid with the updated list
+                        gridControl1.DataSource = updatedFaturalarFromDb;
                         gridControl1.ForceInitialize();
-                        LB_FaturaSayısı.Text = faturalarFromDb.Count.ToString();
+                        LB_FaturaSayısı.Text = updatedFaturalarFromDb.Count.ToString();
+
+                        // If you want to keep `faturalar` updated as well
+                        faturalar = updatedFaturalarFromDb;
                     }
                     catch (Exception ex)
                     {
@@ -504,36 +511,40 @@ namespace Tesla_CanToptan
 
         private async void Btn_LogoAktar_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            try
-            {
-                // Token al
-                string token = await GetAccessTokenAsync();
-                MessageBox.Show("Token alındı: " + token, "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+           
+    WaitForm waitForm = new WaitForm();
+    waitForm.Show();  
 
-                // Fatura örneği oluştur
-                var fatura = new Fatura
-                {
-                    TarihSaat = DateTime.Now,
-                    CariKodu = "040020561",
-                    FaturaNumarasi = "FAT-001",
-                    BayiKarKDV = 100,
-                    FirmaKarKDV = 50,
-                    Kalemler = new List<FaturaKalemi>
-            {
-                new FaturaKalemi { UrunKodu = "PLRC", Miktar = 2, BirimFiyat = 50 },
-                new FaturaKalemi { UrunKodu = "MUARCB", Miktar = 1, BirimFiyat = 100 }
-            }
-                };
+    try
+    {
+        
+        waitForm.UpdateCaption("İşlem Başladı");
+        waitForm.UpdateDescription("Token alınıyor...");
 
-                // Faturayı API'ye aktar
-                await PostFaturaAsync(token, fatura);
+        // Token al
+        string token = await GetAccessTokenAsync();
+        waitForm.UpdateDescription("Faturalar aktarılıyor...");
 
-                MessageBox.Show("Fatura başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Hata: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+      
+
+       
+        foreach (var fatura in faturalar)  
+        {
+            await PostFaturaAsync(token, fatura);
+        }
+
+        MessageBox.Show("Fatura başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show("Hata: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+    }
+    finally
+    {
+                DeleteDataFromDatabase();
+               
+                waitForm.Close();  
+    }
         }
 
         private async Task<string> GetAccessTokenAsync()
@@ -544,10 +555,14 @@ namespace Tesla_CanToptan
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
                     "TUVGQVBFWDpGWEh4VGV4NThWd0pwbXNaSC9sSHVybkQ1elAwWVo3Tm14M0xZaDF1SFVvPQ==");
 
-                // İçerik tipini body'de belirt
                 var body = new StringContent("grant_type=password&username=LOGO&firmno=24&password=LOGO", Encoding.UTF8, "application/x-www-form-urlencoded");
                 var response = await client.PostAsync(url, body);
-                response.EnsureSuccessStatusCode();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    throw new Exception($"Token alma başarısız! HTTP {response.StatusCode}: {errorContent}");
+                }
 
                 var responseBody = await response.Content.ReadAsStringAsync();
                 dynamic json = JsonConvert.DeserializeObject(responseBody);
@@ -610,13 +625,18 @@ namespace Tesla_CanToptan
                     TRANSACTIONS = new { items }
                 };
 
-                // İçeriği JSON formatında belirt
                 var content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
                 var response = await client.PostAsync(url, content);
-                response.EnsureSuccessStatusCode();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    throw new Exception($"Fatura aktarımı başarısız! HTTP {response.StatusCode}: {errorContent}");
+                }
             }
         }
+    }
 
 
     }
-}
+
