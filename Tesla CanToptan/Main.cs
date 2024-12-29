@@ -577,6 +577,7 @@ namespace Tesla_CanToptan
                 var url = "http://192.168.1.103:3000/api/v1/salesInvoices";
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
+                // Faturadaki kalemleri hazırlama
                 var items = new List<object>();
 
                 foreach (var kalem in fatura.Kalemler)
@@ -610,6 +611,9 @@ namespace Tesla_CanToptan
                     UNIT_CODE = "ADET"
                 });
 
+                var accepTeInv = await GetAcceptEInvAndProfileIdAsync(fatura.CariKodu);
+
+               
                 var body = new
                 {
                     TYPE = "8",
@@ -617,11 +621,11 @@ namespace Tesla_CanToptan
                     DATE = fatura.TarihSaat,
                     ARP_CODE = fatura.CariKodu,
                     CURRSEL_TOTALS = "1",
-                    EINVOICE = "2",
-                    PROFILE_ID = "2",
-                    EINVOICE_TYPE = "2",
-                    EARCHIVEDETR_SENDMOD = "2",
-                    EARCHIVEDETR_INTPAYMENTTYPE = "4",
+                    EINVOICE = accepTeInv.ACCEPTEINV == "1" ? "1" : "2", // ACCEPTEINV = "1" ise EINVOICE = "1"
+                    PROFILE_ID = accepTeInv.PROFILEID == "1" ? "1" : "2", // PROFILEID = "1" ise PROFILE_ID = "1"
+                    EINVOICE_TYPE = accepTeInv.ACCEPTEINV == "1" ? null : "2", // ACCEPTEINV = "1" değilse EINVOICE_TYPE = "2"
+                    EARCHIVEDETR_SENDMOD = accepTeInv.ACCEPTEINV == "1" ? null : "2", // Aynı şekilde
+                    EARCHIVEDETR_INTPAYMENTTYPE = accepTeInv.ACCEPTEINV == "1" ? null : "4", // Aynı şekilde
                     TRANSACTIONS = new { items }
                 };
 
@@ -635,8 +639,34 @@ namespace Tesla_CanToptan
                 }
             }
         }
+
+        private async Task<(string ACCEPTEINV, string PROFILEID)> GetAcceptEInvAndProfileIdAsync(string cariKodu)
+        {
+            string accepTeInv = null;
+            string profileId = null;
+
+            using (var connection = new SqlConnectionClass().baglanti()) 
+            {
+                var command = new SqlCommand("SELECT ACCEPTEINV, PROFILEID FROM GODB..LG_024_CLCARD WHERE CODE = @CariKodu", connection);
+                command.Parameters.AddWithValue("@CariKodu", cariKodu);
+
+                using (var reader = await command.ExecuteReaderAsync())  
+                {
+                    if (await reader.ReadAsync())  
+                    {
+                        accepTeInv = reader["ACCEPTEINV"].ToString();
+                        profileId = reader["PROFILEID"].ToString();
+                    }
+                }
+            }
+
+            return (accepTeInv, profileId);
+        }
+
+
+
     }
 
 
-    }
+}
 

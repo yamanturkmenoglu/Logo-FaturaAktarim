@@ -6,13 +6,14 @@ namespace Tesla_CanToptan
 {
    
         class SqlConnectionClass
+    {
+        public SqlConnection baglanti()
         {
-            public SqlConnection baglanti()
-            {
-                string connectionString = ConfigurationManager.ConnectionStrings["SqlServerConnection"].ConnectionString;
-                SqlConnection baglan = new SqlConnection(connectionString);
-                baglan.Open();
-                return baglan;
-            }
+            string connectionString = ConfigurationManager.ConnectionStrings["SqlServerConnection"].ConnectionString;
+            SqlConnection baglan = new SqlConnection(connectionString);
+            baglan.Open();
+            return baglan;
         }
+
+    }
 }
