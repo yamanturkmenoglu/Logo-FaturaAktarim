@@ -512,39 +512,39 @@ namespace Tesla_CanToptan
         private async void Btn_LogoAktar_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
            
-    WaitForm waitForm = new WaitForm();
-    waitForm.Show();  
+                    WaitForm waitForm = new WaitForm();
+                    waitForm.Show();  
 
-    try
-    {
+                    try
+                    {
         
-        waitForm.UpdateCaption("İşlem Başladı");
-        waitForm.UpdateDescription("Token alınıyor...");
+                        waitForm.UpdateCaption("İşlem Başladı");
+                        waitForm.UpdateDescription("Token alınıyor...");
 
-        // Token al
-        string token = await GetAccessTokenAsync();
-        waitForm.UpdateDescription("Faturalar aktarılıyor...");
+                        // Token al
+                        string token = await GetAccessTokenAsync();
+                        waitForm.UpdateDescription("Faturalar aktarılıyor...");
 
       
 
        
-        foreach (var fatura in faturalar)  
-        {
-            await PostFaturaAsync(token, fatura);
-        }
+                        foreach (var fatura in faturalar)  
+                        {
+                            await PostFaturaAsync(token, fatura);
+                        }
 
-        MessageBox.Show("Fatura başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-    }
-    catch (Exception ex)
-    {
-        MessageBox.Show("Hata: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-    }
-    finally
-    {
-                DeleteDataFromDatabase();
+                        MessageBox.Show("Fatura başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Hata: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    finally
+                    {
+                                DeleteDataFromDatabase();
                
-                waitForm.Close();  
-    }
+                                waitForm.Close();  
+                    }
         }
 
         private async Task<string> GetAccessTokenAsync()
