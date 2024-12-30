@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using System.Configuration;
 
 namespace Tesla_CanToptan
 {
@@ -24,8 +25,8 @@ namespace Tesla_CanToptan
         }
         SqlConnectionClass bgl = new SqlConnectionClass();
         private List<Fatura> faturalar = new List<Fatura>();
-
         
+
         private void Btn_DosayaSec_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             DeleteDataFromDatabase();
@@ -44,20 +45,20 @@ namespace Tesla_CanToptan
                         LB_DosyaAdı.Text = Path.GetFileName(filePath);
                         LB_Yol.Text = filePath;
                         string[] faturaVerisi = File.ReadAllLines(filePath, Encoding.GetEncoding("ISO-8859-9"));
-                        faturalar = ParseFaturalar(faturaVerisi);  // Assign parsed invoices to the class-level variable
+                        faturalar = ParseFaturalar(faturaVerisi);  
 
                         InsertDataIntoDatabase(faturalar);
-                        ExecuteProcedures();  // Execute any necessary database procedures
+                        ExecuteProcedures(); 
 
-                        // Now retrieve the updated data from the database
+                        
                         List<Fatura> updatedFaturalarFromDb = GetFaturalarFromDatabase();
 
-                        // Update the grid with the updated list
+                        
                         gridControl1.DataSource = updatedFaturalarFromDb;
                         gridControl1.ForceInitialize();
                         LB_FaturaSayısı.Text = updatedFaturalarFromDb.Count.ToString();
+                        
 
-                        // If you want to keep `faturalar` updated as well
                         faturalar = updatedFaturalarFromDb;
                     }
                     catch (Exception ex)
@@ -184,7 +185,7 @@ namespace Tesla_CanToptan
             {
                 foreach (var fatura in faturalar)
                 {
-                    // [HRK.FaturaBasliklari] tablosuna veri ekleme
+                    
                     string insertFaturaBaslikQuery = @"
     INSERT INTO [HRK.FaturaBasliklari] 
     (TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, BayiKarKDV, FirmaKarKDV, ToplamTutar)
@@ -205,7 +206,6 @@ namespace Tesla_CanToptan
 
                     int faturaId = Convert.ToInt32(command.ExecuteScalar());
 
-                    // [HRK.FaturaKalemleri] tablosuna veri ekleme
                     foreach (var kalem in fatura.Kalemler)
                     {
                         string insertKalemQuery = @"
@@ -262,7 +262,7 @@ namespace Tesla_CanToptan
                 }
                 reader.Close();
 
-                // Fatura kalemlerini ekleyelim
+             
                 foreach (var fatura in faturalar)
                 {
                     string selectKalemQuery = "SELECT * FROM [HRK.FaturaKalemleri] WHERE FaturaId = @FaturaId";
@@ -317,7 +317,7 @@ namespace Tesla_CanToptan
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "BayiKarKDV", Caption = "Bayi Kar Kdv", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "FirmaKarKDV", Caption = "Firma Kar Kav", Visible = true });
 
-            //masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "OdemeDurumu", Caption = "Durum", Visible = true });
+           
 
             GridView detailView = new GridView(gridControl1);
             detailView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "UrunKodu", Caption = "Malzeme Kodu", Visible = true });
@@ -350,13 +350,13 @@ namespace Tesla_CanToptan
             masterView.Appearance.Row.Font = new System.Drawing.Font("Tahoma", 10);
             masterView.Appearance.Row.ForeColor = System.Drawing.Color.Black;
 
-            // Kolon başlıklarını ortala
+           
             foreach (DevExpress.XtraGrid.Columns.GridColumn column in masterView.Columns)
             {
                 column.AppearanceHeader.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
             }
 
-            // Detay view stil ayarları
+            
             detailView.OptionsView.EnableAppearanceEvenRow = true;
             detailView.OptionsView.EnableAppearanceOddRow = true;
             detailView.Appearance.EvenRow.BackColor = System.Drawing.Color.LightGreen;
@@ -366,13 +366,13 @@ namespace Tesla_CanToptan
             detailView.Appearance.Row.Font = new System.Drawing.Font("Tahoma", 10);
             detailView.Appearance.Row.ForeColor = System.Drawing.Color.Black;
 
-            // Kolon başlıklarını ortala
+            
             foreach (DevExpress.XtraGrid.Columns.GridColumn column in detailView.Columns)
             {
                 column.AppearanceHeader.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
             }
 
-            // Grid görünüm ayarları
+          
             gridControl1.LookAndFeel.UseDefaultLookAndFeel = false;
             gridControl1.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         }
@@ -511,52 +511,60 @@ namespace Tesla_CanToptan
 
         private async void Btn_LogoAktar_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-           
-                    WaitForm waitForm = new WaitForm();
-                    waitForm.Show();  
+            WaitForm waitForm = new WaitForm();
+            waitForm.Show();
 
-                    try
-                    {
-        
-                        waitForm.UpdateCaption("İşlem Başladı");
-                        waitForm.UpdateDescription("Token alınıyor...");
+            try
+            {
+                waitForm.UpdateCaption("İşlem Başladı");
+                waitForm.UpdateDescription("Token alınıyor...");
 
-                        // Token al
-                        string token = await GetAccessTokenAsync();
-                        waitForm.UpdateDescription("Faturalar aktarılıyor...");
+                string logoKullanici = ConfigurationManager.AppSettings["LogoKullanici"];
+                string logoParola = ConfigurationManager.AppSettings["LogoParola"];
+                string firmaNumarasi = ConfigurationManager.AppSettings["FirmaNumarasi"];
+                string url = ConfigurationManager.AppSettings["Url"];
+                string logoDatabase = ConfigurationManager.AppSettings["LogoDatabase"];
 
-      
+                // Token al
+                string token = await GetAccessTokenAsync(logoKullanici, logoParola, firmaNumarasi, url);
+                waitForm.UpdateDescription("Faturalar aktarılıyor...");
 
-       
-                        foreach (var fatura in faturalar)  
-                        {
-                            await PostFaturaAsync(token, fatura);
-                        }
+                foreach (var fatura in faturalar)
+                {
+                    await PostFaturaAsync(token, fatura, url);
+                }
 
-                        MessageBox.Show("Fatura başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("Hata: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                    finally
-                    {
-                                DeleteDataFromDatabase();
-               
-                                waitForm.Close();  
-                    }
+                MessageBox.Show("Fatura başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Hata: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                DeleteDataFromDatabase();
+                waitForm.Close();
+            }
         }
 
-        private async Task<string> GetAccessTokenAsync()
+        private async Task<string> GetAccessTokenAsync(string logoKullanici, string logoParola, string firmaNumarasi, string url)
         {
+            if (string.IsNullOrEmpty(url))
+                throw new Exception("Url ayarı eksik!");
+
+            var tokenUrl = $"{url}/api/v1/token";
+
             using (var client = new HttpClient())
             {
-                var url = "http://192.168.1.103:3000/api/v1/token";
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
-                    "TUVGQVBFWDpGWEh4VGV4NThWd0pwbXNaSC9sSHVybkQ1elAwWVo3Tm14M0xZaDF1SFVvPQ==");
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                    "Basic", "TUVGQVBFWDpGWEh4VGV4NThWd0pwbXNaSC9sSHVybkQ1elAwWVo3Tm14M0xZaDF1SFVvPQ==");
 
-                var body = new StringContent("grant_type=password&username=LOGO&firmno=24&password=LOGO", Encoding.UTF8, "application/x-www-form-urlencoded");
-                var response = await client.PostAsync(url, body);
+                var body = new StringContent(
+                    $"grant_type=password&username={logoKullanici}&firmno={firmaNumarasi}&password={logoParola}",
+                    Encoding.UTF8,
+                    "application/x-www-form-urlencoded");
+
+                var response = await client.PostAsync(tokenUrl, body);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -570,11 +578,11 @@ namespace Tesla_CanToptan
             }
         }
 
-        private async Task PostFaturaAsync(string token, Fatura fatura)
+        private async Task PostFaturaAsync(string token, Fatura fatura, string url)
         {
             using (var client = new HttpClient())
             {
-                var url = "http://192.168.1.103:3000/api/v1/salesInvoices";
+                var apiUrl = $"{url}/api/v1/salesInvoices";
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
                 // Faturadaki kalemleri hazırlama
@@ -613,7 +621,6 @@ namespace Tesla_CanToptan
 
                 var accepTeInv = await GetAcceptEInvAndProfileIdAsync(fatura.CariKodu);
 
-               
                 var body = new
                 {
                     TYPE = "8",
@@ -630,7 +637,7 @@ namespace Tesla_CanToptan
                 };
 
                 var content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
-                var response = await client.PostAsync(url, content);
+                var response = await client.PostAsync(apiUrl, content);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -645,14 +652,18 @@ namespace Tesla_CanToptan
             string accepTeInv = null;
             string profileId = null;
 
-            using (var connection = new SqlConnectionClass().baglanti()) 
+            
+            string logoDatabase = ConfigurationManager.AppSettings["LogoDatabase"];
+            string firmaNumarasi = ConfigurationManager.AppSettings["FirmaNumarasi"];
+
+            using (var connection = new SqlConnectionClass().baglanti())
             {
-                var command = new SqlCommand("SELECT ACCEPTEINV, PROFILEID FROM GODB..LG_024_CLCARD WHERE CODE = @CariKodu", connection);
+                var command = new SqlCommand($"SELECT ACCEPTEINV, PROFILEID FROM {logoDatabase}..LG_{firmaNumarasi}_CLCARD WHERE CODE = @CariKodu", connection);
                 command.Parameters.AddWithValue("@CariKodu", cariKodu);
 
-                using (var reader = await command.ExecuteReaderAsync())  
+                using (var reader = await command.ExecuteReaderAsync())
                 {
-                    if (await reader.ReadAsync())  
+                    if (await reader.ReadAsync())
                     {
                         accepTeInv = reader["ACCEPTEINV"].ToString();
                         profileId = reader["PROFILEID"].ToString();
@@ -663,8 +674,7 @@ namespace Tesla_CanToptan
             return (accepTeInv, profileId);
         }
 
-
-
+       
     }
 
 

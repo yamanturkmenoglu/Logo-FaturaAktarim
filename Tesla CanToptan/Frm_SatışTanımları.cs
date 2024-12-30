@@ -1,6 +1,7 @@
 ﻿using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Repository;
 using System;
+using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
@@ -15,43 +16,55 @@ namespace Tesla_CanToptan
             InitializeComponent();
         }
 
-        SqlConnectionClass bgl = new SqlConnectionClass(); // SqlConnectionClass'tan nesne oluştur
+        SqlConnectionClass bgl = new SqlConnectionClass(); 
 
         private void Frm_SatışTanımları_Load(object sender, EventArgs e)
         {
-            InsertData();       // Veritabanına veri ekle
-            LoadData();         // Veriyi GridControl'e yükle
-            ConfigureGrid();    // GridControl'de butonlu editör yapılandır
-            LoadLocalSettings(); // Lokal hafızada kaydedilen değerleri yükle
+            InsertData();       
+            LoadData();         
+            ConfigureGrid();   
+            LoadLocalSettings(); 
 
-            // TextEdit kontrollerinde değişiklik yapıldığında kaydetme işlemi
+           
             Txt_MalzemeK.EditValueChanged += (s, args) => SaveLocalSettings();
             Txt_FirmaKHK.EditValueChanged += (s, args) => SaveLocalSettings();
             Txt_BayiKHK.EditValueChanged += (s, args) => SaveLocalSettings();
         }
-
-        // Veritabanına INSERT işlemi
         private void InsertData()
         {
+            // 'using' ile SqlConnection nesnesi yönetimi sağlanır, bağlantı sonunda otomatik kapanır.
             using (SqlConnection connection = bgl.baglanti())
             {
-                string query = @"
-                    INSERT INTO [TNM.MALZEME FİYAT] (CODE, NAME)
-                    SELECT CODE, NAME
-                    FROM GODB..LG_024_ITEMS
-                    WHERE SPECODE = 'PM'
-                    AND NOT EXISTS (
-                        SELECT 1
-                        FROM [TNM.MALZEME FİYAT]
-                        WHERE [TNM.MALZEME FİYAT].CODE = LG_024_ITEMS.CODE
-                    )";
+                var malzemeKodu = Properties.Settings.Default.MalzemeKodu; // 'PM' veya başka bir değer
+                string logoDatabase = ConfigurationManager.AppSettings["LogoDatabase"]; // 'GODB'
+                string firmaNumarasi = ConfigurationManager.AppSettings["FirmaNumarasi"];
 
-                SqlCommand command = new SqlCommand(query, connection);
-                command.ExecuteNonQuery();  // INSERT sorgusunu çalıştır
+                // Dinamik olarak veritabanı adı ekleyerek SQL sorgusunu oluşturuyoruz
+                string query = $@"
+            INSERT INTO [TNM.MALZEME FİYAT] (CODE, NAME)
+            SELECT CODE, NAME
+            FROM {logoDatabase}..LG_{firmaNumarasi}_ITEMS
+            WHERE SPECODE = @MalzemeKodu
+            AND NOT EXISTS (
+                SELECT 1
+                FROM [TNM.MALZEME FİYAT]
+                WHERE CODE = LG_024_ITEMS.CODE
+            )";
+
+                
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@MalzemeKodu", malzemeKodu);
+
+                    
+                    command.ExecuteNonQuery();
+                }
             }
         }
 
-        // GridControl verilerini yükler
+
+
+
         private void LoadData()
         {
             using (SqlConnection connection = bgl.baglanti())
@@ -59,17 +72,17 @@ namespace Tesla_CanToptan
                 string query = "SELECT ID, CODE, NAME, BAYI_SATIS_FIYATI FROM [TNM.MALZEME FİYAT]";
                 SqlDataAdapter adapter = new SqlDataAdapter(query, connection);
                 DataTable table = new DataTable();
-                adapter.Fill(table);  // Veriyi DataTable'a al
-                gridControl1.DataSource = table;  // GridControl'e veri yükle
+                adapter.Fill(table);  
+                gridControl1.DataSource = table;  
             }
         }
 
-        // GridControl'deki butonlu ve fiyat gösteren editörü yapılandırır
+        
         private void ConfigureGrid()
         {
-            gridView1.Columns["BAYI_SATIS_FIYATI"].Caption = "Bayi Satış Fiyatı";  // Başlık değiştirme
-            gridView1.Columns["CODE"].Caption = "Malzeme Kodu";  // Başlık değiştirme
-            gridView1.Columns["NAME"].Caption = "Malzeme Açıklaması";  // Başlık değiştirme
+            gridView1.Columns["BAYI_SATIS_FIYATI"].Caption = "Bayi Satış Fiyatı"; 
+            gridView1.Columns["CODE"].Caption = "Malzeme Kodu";  
+            gridView1.Columns["NAME"].Caption = "Malzeme Açıklaması";  
             gridView1.Columns["ID"].Visible = false;
 
             gridView1.OptionsView.EnableAppearanceEvenRow = true;
@@ -80,13 +93,13 @@ namespace Tesla_CanToptan
             gridView1.Appearance.Row.Font = new Font("Tahoma", 10);
             gridView1.Appearance.Row.ForeColor = Color.Black;
 
-            // Yeni bir kolon ekleyelim, "BAYI_SATIS_FIYATI" kolonunu gösterecek
+           
             gridView1.Columns["BAYI_SATIS_FIYATI"].Visible = true;
-            gridView1.Columns["BAYI_SATIS_FIYATI"].Caption = "Bayi Satış Fiyatı";  // Kolon başlığı
+            gridView1.Columns["BAYI_SATIS_FIYATI"].Caption = "Bayi Satış Fiyatı";  
             gridView1.Columns["BAYI_SATIS_FIYATI"].DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
-            gridView1.Columns["BAYI_SATIS_FIYATI"].DisplayFormat.FormatString = "c2"; // İki ondalıklı format
+            gridView1.Columns["BAYI_SATIS_FIYATI"].DisplayFormat.FormatString = "c2"; 
 
-            // "İşlemler" adında yeni bir kolon ekliyoruz
+            
             gridView1.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn()
             {
                 FieldName = "İşlemler",
@@ -94,21 +107,21 @@ namespace Tesla_CanToptan
                 Visible = true
             });
 
-            // Butonlu editör oluşturuyoruz
+            
             RepositoryItemButtonEdit buttonEdit = new RepositoryItemButtonEdit();
-            buttonEdit.Buttons[0].Caption = "...";  // Butonun üzerindeki metin
+            buttonEdit.Buttons[0].Caption = "..."; 
             buttonEdit.Buttons[0].Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
             buttonEdit.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.HideTextEditor;
-            buttonEdit.Buttons[0].Width = 20; // Butonun genişliğini küçült
+            buttonEdit.Buttons[0].Width = 20; 
             buttonEdit.ButtonClick += ButtonEdit_ButtonClick;
             buttonEdit.Buttons[0].Appearance.BackColor = Color.LightBlue;
             buttonEdit.Buttons[0].Appearance.ForeColor = Color.Black;
 
-            // "İşlemler" kolonuna buton ekliyoruz
+           
             gridView1.Columns["İşlemler"].ColumnEdit = buttonEdit;
         }
 
-        // Buton tıklama olayını işler
+       
         private void ButtonEdit_ButtonClick(object sender, DevExpress.XtraEditors.Controls.ButtonPressedEventArgs e)
         {
             int rowHandle = gridView1.FocusedRowHandle;
@@ -126,13 +139,13 @@ namespace Tesla_CanToptan
 
                 if (decimal.TryParse(input, out decimal yeniFiyat))
                 {
-                    UpdateFiyatInDatabase(code, yeniFiyat); // Veritabanında güncelle
-                    LoadData(); // GridControl'ü yeniden yükle
+                    UpdateFiyatInDatabase(code, yeniFiyat);
+                    LoadData(); 
                 }
             }
         }
 
-        // Fiyatı veritabanında günceller
+      
         private void UpdateFiyatInDatabase(string code, decimal yeniFiyat)
         {
             using (SqlConnection connection = bgl.baglanti())
@@ -141,11 +154,11 @@ namespace Tesla_CanToptan
                 SqlCommand command = new SqlCommand(query, connection);
                 command.Parameters.AddWithValue("@YeniFiyat", yeniFiyat);
                 command.Parameters.AddWithValue("@Code", code);
-                command.ExecuteNonQuery();  // Veritabanında güncelleme işlemi
+                command.ExecuteNonQuery();  
             }
         }
 
-        // Lokal hafızada saklanan değerleri yükler
+        
         private void LoadLocalSettings()
         {
             Txt_MalzemeK.Text = Properties.Settings.Default.MalzemeKodu;
@@ -153,13 +166,13 @@ namespace Tesla_CanToptan
             Txt_BayiKHK.Text = Properties.Settings.Default.BayiKodu;
         }
 
-        // Kullanıcının girdiği değerleri lokal hafızaya kaydeder
+       
         private void SaveLocalSettings()
         {
             Properties.Settings.Default.MalzemeKodu = Txt_MalzemeK.Text;
             Properties.Settings.Default.FirmaKodu = Txt_FirmaKHK.Text;
             Properties.Settings.Default.BayiKodu = Txt_BayiKHK.Text;
-            Properties.Settings.Default.Save(); // Değişiklikleri kaydet
+            Properties.Settings.Default.Save(); 
         }
     }
 }
