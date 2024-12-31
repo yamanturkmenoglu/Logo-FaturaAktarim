@@ -49,10 +49,24 @@ namespace Tesla_CanToptan
             this.label2 = new System.Windows.Forms.Label();
             this.LB_Tarih = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
+            this.Com_isyeri = new DevExpress.XtraEditors.ComboBoxEdit();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.Com_Bolum = new DevExpress.XtraEditors.ComboBoxEdit();
+            this.Com_Fabrika = new DevExpress.XtraEditors.ComboBoxEdit();
+            this.label4 = new System.Windows.Forms.Label();
+            this.label6 = new System.Windows.Forms.Label();
+            this.label7 = new System.Windows.Forms.Label();
+            this.label8 = new System.Windows.Forms.Label();
+            this.Com_Ambar = new DevExpress.XtraEditors.ComboBoxEdit();
             ((System.ComponentModel.ISupportInitialize)(this.ribbonControl1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gridControl1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gridView1)).BeginInit();
             this.panel1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.Com_isyeri.Properties)).BeginInit();
+            this.panel2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.Com_Bolum.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.Com_Fabrika.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.Com_Ambar.Properties)).BeginInit();
             this.SuspendLayout();
             // 
             // ribbonControl1
@@ -245,11 +259,107 @@ namespace Tesla_CanToptan
             this.label1.TabIndex = 0;
             this.label1.Text = "Tarih: ";
             // 
+            // Com_isyeri
+            // 
+            this.Com_isyeri.Location = new System.Drawing.Point(56, 12);
+            this.Com_isyeri.MenuManager = this.ribbonControl1;
+            this.Com_isyeri.Name = "Com_isyeri";
+            this.Com_isyeri.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.Com_isyeri.Size = new System.Drawing.Size(133, 20);
+            this.Com_isyeri.TabIndex = 11;
+            // 
+            // panel2
+            // 
+            this.panel2.Controls.Add(this.label8);
+            this.panel2.Controls.Add(this.Com_Ambar);
+            this.panel2.Controls.Add(this.label7);
+            this.panel2.Controls.Add(this.label6);
+            this.panel2.Controls.Add(this.label4);
+            this.panel2.Controls.Add(this.Com_Fabrika);
+            this.panel2.Controls.Add(this.Com_Bolum);
+            this.panel2.Controls.Add(this.Com_isyeri);
+            this.panel2.Location = new System.Drawing.Point(253, 66);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(397, 81);
+            this.panel2.TabIndex = 12;
+            // 
+            // Com_Bolum
+            // 
+            this.Com_Bolum.Location = new System.Drawing.Point(56, 38);
+            this.Com_Bolum.MenuManager = this.ribbonControl1;
+            this.Com_Bolum.Name = "Com_Bolum";
+            this.Com_Bolum.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.Com_Bolum.Size = new System.Drawing.Size(133, 20);
+            this.Com_Bolum.TabIndex = 12;
+            // 
+            // Com_Fabrika
+            // 
+            this.Com_Fabrika.Location = new System.Drawing.Point(256, 13);
+            this.Com_Fabrika.MenuManager = this.ribbonControl1;
+            this.Com_Fabrika.Name = "Com_Fabrika";
+            this.Com_Fabrika.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.Com_Fabrika.Size = new System.Drawing.Size(133, 20);
+            this.Com_Fabrika.TabIndex = 13;
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
+            this.label4.Location = new System.Drawing.Point(3, 15);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(35, 14);
+            this.label4.TabIndex = 14;
+            this.label4.Text = "İşyeri";
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
+            this.label6.Location = new System.Drawing.Point(203, 16);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(44, 14);
+            this.label6.TabIndex = 15;
+            this.label6.Text = "Fabrika";
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
+            this.label7.Location = new System.Drawing.Point(3, 40);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(40, 14);
+            this.label7.TabIndex = 16;
+            this.label7.Text = "Bölüm";
+            // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
+            this.label8.Location = new System.Drawing.Point(203, 41);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(42, 14);
+            this.label8.TabIndex = 18;
+            this.label8.Text = "Ambar";
+            // 
+            // Com_Ambar
+            // 
+            this.Com_Ambar.Location = new System.Drawing.Point(256, 38);
+            this.Com_Ambar.MenuManager = this.ribbonControl1;
+            this.Com_Ambar.Name = "Com_Ambar";
+            this.Com_Ambar.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.Com_Ambar.Size = new System.Drawing.Size(133, 20);
+            this.Com_Ambar.TabIndex = 17;
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1135, 663);
+            this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.gridControl1);
             this.Controls.Add(this.ribbonControl1);
@@ -265,6 +375,12 @@ namespace Tesla_CanToptan
             ((System.ComponentModel.ISupportInitialize)(this.gridView1)).EndInit();
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.Com_isyeri.Properties)).EndInit();
+            this.panel2.ResumeLayout(false);
+            this.panel2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.Com_Bolum.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.Com_Fabrika.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.Com_Ambar.Properties)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -291,6 +407,15 @@ namespace Tesla_CanToptan
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label LB_FaturaSayısı;
         private System.Windows.Forms.Label label5;
+        private DevExpress.XtraEditors.ComboBoxEdit Com_isyeri;
+        private System.Windows.Forms.Panel panel2;
+        private DevExpress.XtraEditors.ComboBoxEdit Com_Fabrika;
+        private DevExpress.XtraEditors.ComboBoxEdit Com_Bolum;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Label label8;
+        private DevExpress.XtraEditors.ComboBoxEdit Com_Ambar;
     }
 }
 

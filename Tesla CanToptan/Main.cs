@@ -299,7 +299,7 @@ namespace Tesla_CanToptan
             ConfigureGridControl();
             DateTime DataSetDateTime = DateTime.Now;
             LB_Tarih.Text = DataSetDateTime.ToString("dd.MM.yyyy HH:mm:ss");
-
+            InitializeComboBoxes();
         }
 
         private void ConfigureGridControl()
@@ -508,9 +508,96 @@ namespace Tesla_CanToptan
             public decimal KDVliBirimFiyat { get; set; }
             public decimal ToplamTutar { get; set; }
         }
+        private void InitializeComboBoxes()
+        {
+            string logoDatabase = ConfigurationManager.AppSettings["LogoDatabase"];
+            string firmaNumarasi = ConfigurationManager.AppSettings["FirmaNumarasi"];
+
+            
+            LoadComboBox(Com_isyeri, $"SELECT [NR], [NAME] FROM {logoDatabase}..[L_CAPIDEPT] WHERE [FIRMNR] = {firmaNumarasi}");
+            LoadComboBox(Com_Bolum, $"SELECT [NR], [NAME] FROM {logoDatabase}..[L_CAPIDIV] WHERE [FIRMNR] = {firmaNumarasi}");
+            LoadComboBox(Com_Fabrika, $"SELECT [NR], [NAME] FROM {logoDatabase}..[L_CAPIFACTORY] WHERE [FIRMNR] = {firmaNumarasi}");
+
+           
+            Com_isyeri.SelectedValueChanged += (s, e) =>
+            {
+                SelectedIşyeriNR = (Com_isyeri.SelectedItem as KeyValuePair<string, string>?)?.Key;
+                LoadAmbarComboBox(); 
+            };
+
+            Com_Bolum.SelectedValueChanged += (s, e) =>
+            {
+                SelectedBolumNR = (Com_Bolum.SelectedItem as KeyValuePair<string, string>?)?.Key;
+                LoadAmbarComboBox();  
+            };
+
+            Com_Fabrika.SelectedValueChanged += (s, e) =>
+            {
+                SelectedFabrikaNR = (Com_Fabrika.SelectedItem as KeyValuePair<string, string>?)?.Key;
+                LoadAmbarComboBox();  
+            };
+            Com_Ambar.SelectedValueChanged += (s, e) =>
+            {
+                SelectedAmbarNR = (Com_Ambar.SelectedItem as KeyValuePair<string, string>?)?.Key;
+               
+            };
+        }
+
+        private void LoadAmbarComboBox()
+        {
+            if (!string.IsNullOrEmpty(SelectedBolumNR) && !string.IsNullOrEmpty(SelectedFabrikaNR))
+            {
+                string logoDatabase = ConfigurationManager.AppSettings["LogoDatabase"];
+                string firmaNumarasi = ConfigurationManager.AppSettings["FirmaNumarasi"];
+
+                // Com_Ambar'ı sadece seçilen Bölüm ve Fabrika NR'leri mevcutsa yükle
+                LoadComboBox(Com_Ambar, $"SELECT [NR], [NAME] FROM {logoDatabase}..[L_CAPIWHOUSE] WHERE [FIRMNR] = {firmaNumarasi} AND DIVISNR = {SelectedBolumNR} AND FACTNR = {SelectedFabrikaNR}");
+            }
+        }
+
+        private void LoadComboBox(DevExpress.XtraEditors.ComboBoxEdit comboBox, string query)
+        {
+            try
+            {
+                using (SqlConnection connection = bgl.baglanti())
+                {
+                    SqlCommand command = new SqlCommand(query, connection);
+                    SqlDataReader reader = command.ExecuteReader();
+
+                    comboBox.Properties.Items.Clear(); 
+
+                    while (reader.Read())
+                    {
+                        
+                        comboBox.Properties.Items.Add(new KeyValuePair<string, string>(
+                            reader["NR"].ToString(), // Key: NR
+                            reader["NAME"].ToString() // Value: NAME
+                        ));
+                    }
+
+                    comboBox.Properties.NullText = "Seçiniz"; 
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Veri yüklenirken hata oluştu: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+       
+        public string SelectedIşyeriNR { get; private set; }
+        public string SelectedBolumNR { get; private set; }
+        public string SelectedFabrikaNR { get; private set; }
+        public string SelectedAmbarNR { get; private set; }
 
         private async void Btn_LogoAktar_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
+            
+            if (gridControl1.MainView.RowCount == 0)
+            {
+                MessageBox.Show("Lütfen fatura verilerini ekleyin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return; 
+            }
             WaitForm waitForm = new WaitForm();
             waitForm.Show();
 
@@ -628,9 +715,13 @@ namespace Tesla_CanToptan
                     DATE = fatura.TarihSaat,
                     ARP_CODE = fatura.CariKodu,
                     CURRSEL_TOTALS = "1",
+                    FACTORY= SelectedFabrikaNR,
+                    DIVISION = SelectedBolumNR,
+                    DEPARTMENT = SelectedIşyeriNR,
+                    SOURCE_WH = SelectedAmbarNR,
                     EINVOICE = accepTeInv.ACCEPTEINV == "1" ? "1" : "2", // ACCEPTEINV = "1" ise EINVOICE = "1"
                     PROFILE_ID = accepTeInv.PROFILEID == "1" ? "1" : "2", // PROFILEID = "1" ise PROFILE_ID = "1"
-                    EINVOICE_TYPE = accepTeInv.ACCEPTEINV == "1" ? null : "2", // ACCEPTEINV = "1" değilse EINVOICE_TYPE = "2"
+                    EINVOICE_TYPE = "2" ,
                     EARCHIVEDETR_SENDMOD = accepTeInv.ACCEPTEINV == "1" ? null : "2", // Aynı şekilde
                     EARCHIVEDETR_INTPAYMENTTYPE = accepTeInv.ACCEPTEINV == "1" ? null : "4", // Aynı şekilde
                     TRANSACTIONS = new { items }
