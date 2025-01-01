@@ -1,0 +1,187 @@
+CREATE PROCEDURE UpdateBirimFiyat
+AS
+BEGIN
+    
+    DECLARE @FaturaId INT, @KalemId INT, @UrunKodu NVARCHAR(50);
+    DECLARE @BayiSatisFiyati DECIMAL(18,4), @BirimFiyat DECIMAL(18,4), @YeniBirimFiyat DECIMAL(18,4);
+
+    
+    DECLARE cur CURSOR FOR 
+    SELECT 
+        F.FaturaId, 
+        K.KalemId, 
+        K.UrunKodu, 
+        T.BAYI_SATIS_FIYATI, 
+        K.BirimFiyat
+    FROM 
+        [HRK.FaturaBasliklari] AS F
+    INNER JOIN 
+        [HRK.FaturaKalemleri] AS K ON F.FaturaId = K.FaturaId
+    INNER JOIN 
+        [TNM.MALZEME FİYAT] AS T ON T.CODE = K.UrunKodu;
+
+    OPEN cur;
+    FETCH NEXT FROM cur INTO @FaturaId, @KalemId, @UrunKodu, @BayiSatisFiyati, @BirimFiyat;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        -- Adım 1: BAYI_SATIS_FIYATI / 10
+        SET @BayiSatisFiyati = @BayiSatisFiyati / 10;
+
+        -- Adım 2: 79 - BirimFiyat
+        SET @YeniBirimFiyat = @BayiSatisFiyati - @BirimFiyat;
+
+        -- Adım 3: Yeni birim fiyatı *20 / 100
+        SET @YeniBirimFiyat = @YeniBirimFiyat * 20 / 100;
+
+        -- Adım 4: 79 - (Yeni Birim Fiyat)
+        SET @YeniBirimFiyat = @BirimFiyat - @YeniBirimFiyat;
+
+        -- Adım 5: (BirimFiyat * 100 / 120)
+        SET @YeniBirimFiyat = @YeniBirimFiyat * 100 / 120;
+
+        
+        UPDATE [HRK.FaturaKalemleri]
+        SET BirimFiyat = @YeniBirimFiyat
+        WHERE KalemId = @KalemId;
+
+        
+        FETCH NEXT FROM cur INTO @FaturaId, @KalemId, @UrunKodu, @BayiSatisFiyati, @BirimFiyat;
+    END
+
+    CLOSE cur;
+    DEALLOCATE cur;
+END;
+
+CREATE PROCEDURE HesaplaTümFaturalarBayiKarKDV
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @FaturaId INT;
+    DECLARE @ToplamBayiKarKDV DECIMAL(18, 4);
+
+    DECLARE FaturaCursor CURSOR FOR
+        SELECT FaturaId
+        FROM [HRK.FaturaBasliklari];
+
+    OPEN FaturaCursor;
+
+    FETCH NEXT FROM FaturaCursor INTO @FaturaId;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @ToplamBayiKarKDV = 0;
+
+        SELECT 
+            @ToplamBayiKarKDV = SUM(
+                ((T.BAYI_SATIS_FIYATI / 10 - K.BirimFiyat) * 0.2) * K.Miktar
+            )
+        FROM 
+            [HRK.FaturaKalemleri] AS K
+        INNER JOIN 
+            [TNM.MALZEME FİYAT] AS T ON T.CODE = K.UrunKodu
+        WHERE 
+            K.FaturaId = @FaturaId;
+
+        UPDATE [HRK.FaturaBasliklari]
+        SET BayiKarKDV = ISNULL(@ToplamBayiKarKDV, 0)
+        WHERE FaturaId = @FaturaId;
+
+        FETCH NEXT FROM FaturaCursor INTO @FaturaId;
+    END;
+
+    CLOSE FaturaCursor;
+    DEALLOCATE FaturaCursor;
+
+    PRINT 'Tüm faturalar için BayiKarKDV başarıyla hesaplandı ve güncellendi.';
+END;
+
+
+CREATE PROCEDURE HesaplaTümFaturalarFirmaKarKDV
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @FaturaId INT;
+    DECLARE @ToplamFirmaKarKDV DECIMAL(18, 4);
+
+    DECLARE FaturaCursor CURSOR FOR
+        SELECT FaturaId
+        FROM [HRK.FaturaBasliklari];
+
+    OPEN FaturaCursor;
+
+    FETCH NEXT FROM FaturaCursor INTO @FaturaId;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @ToplamFirmaKarKDV = 0;
+
+        SELECT 
+            @ToplamFirmaKarKDV = SUM(
+                (K.BirimFiyat * 0.2) * K.Miktar
+            )
+        FROM 
+            [HRK.FaturaKalemleri] AS K
+        INNER JOIN 
+            [TNM.MALZEME FİYAT] AS T ON T.CODE = K.UrunKodu
+        WHERE 
+            K.FaturaId = @FaturaId;
+
+        UPDATE [HRK.FaturaBasliklari]
+        SET FirmaKarKDV = ISNULL(@ToplamFirmaKarKDV, 0)
+        WHERE FaturaId = @FaturaId;
+
+        FETCH NEXT FROM FaturaCursor INTO @FaturaId;
+    END;
+
+    CLOSE FaturaCursor;
+    DEALLOCATE FaturaCursor;
+
+    PRINT 'Tüm faturalar için FirmaKarKDV başarıyla hesaplandı ve güncellendi.';
+END;
+
+CREATE PROCEDURE GuncelleIndirimliBirimFiyatlar
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @FaturaId INT;
+    DECLARE @ToplamIndirim DECIMAL(18, 4);
+    DECLARE @ToplamTutar DECIMAL(18, 4);
+    DECLARE @IndirimOrani DECIMAL(18, 4);
+
+    DECLARE FaturaCursor CURSOR FOR
+        SELECT FaturaId, ToplamIndirim, ToplamTutar
+        FROM [HRK.FaturaBasliklari]
+        WHERE ToplamIndirim > 0;
+
+    OPEN FaturaCursor;
+
+    FETCH NEXT FROM FaturaCursor INTO @FaturaId, @ToplamIndirim, @ToplamTutar;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @IndirimOrani = (@ToplamIndirim / @ToplamTutar) * 100;
+
+        UPDATE [HRK.FaturaKalemleri]
+        SET BirimFiyat = ROUND(
+            BirimFiyat - (BirimFiyat * @IndirimOrani / 100), 
+            4
+        )
+        WHERE FaturaId = @FaturaId;
+
+        FETCH NEXT FROM FaturaCursor INTO @FaturaId, @ToplamIndirim, @ToplamTutar;
+    END;
+
+    CLOSE FaturaCursor;
+    DEALLOCATE FaturaCursor;
+
+    PRINT 'ToplamIndirim sıfır olmayan faturaların birim fiyatları güncellendi.';
+END;
+
+EXEC GuncelleIndirimliBirimFiyatlar;
+EXEC HesaplaTümFaturalarBayiKarKDV;
+EXEC UpdateBirimFiyat;
+EXEC HesaplaTümFaturalarFirmaKarKDV

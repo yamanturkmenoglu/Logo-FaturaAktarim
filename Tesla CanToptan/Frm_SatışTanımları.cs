@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace Tesla_CanToptan
@@ -15,46 +16,72 @@ namespace Tesla_CanToptan
             InitializeComponent();
         }
 
-        SqlConnectionClass bgl = new SqlConnectionClass(); 
+        SqlConnectionClass bgl = new SqlConnectionClass();
 
-        private void Frm_SatışTanımları_Load(object sender, EventArgs e)
-        {
-            InsertData();
-            LoadData();
-            ConfigureGrid();
-            LoadLocalSettings();
 
-            Txt_MalzemeK.EditValueChanged += (s, args) => SaveLocalSettings();
-            Txt_FirmaKHK.EditValueChanged += (s, args) => SaveLocalSettings();
-            Txt_BayiKHK.EditValueChanged += (s, args) => SaveLocalSettings();
-        }
 
         private void InsertData()
         {
+            var malzemeKodlari = Txt_MalzemeK.Text.Split(',')
+                                                  .Select(k => k.Trim())
+                                                  .Where(k => !string.IsNullOrWhiteSpace(k))
+                                                  .ToList();
+
+            if (!malzemeKodlari.Any())
+            {
+                return;
+            }
+
+            string malzemeKodlariStr = string.Join("','", malzemeKodlari);
+
             using (SqlConnection connection = bgl.baglanti())
             {
-                var malzemeKodu = Properties.Settings.Default.MalzemeKodu;
                 string logoDatabase = ConfigurationManager.AppSettings["LogoDatabase"];
                 string firmaNumarasi = ConfigurationManager.AppSettings["FirmaNumarasi"];
 
-                string query = $@"
-                INSERT INTO [TNM.MALZEME FİYAT] (CODE, NAME)
-                SELECT CODE, NAME
-                FROM {logoDatabase}..LG_{firmaNumarasi}_ITEMS
-                WHERE SPECODE = @MalzemeKodu
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM [TNM.MALZEME FİYAT]
-                    WHERE CODE = LG_{firmaNumarasi}_ITEMS.CODE
-                )";
-
-                using (SqlCommand command = new SqlCommand(query, connection))
+                // 1. Insert işlemi
+                string insertQuery = $@"
+            INSERT INTO [TNM.MALZEME FİYAT] (CODE, NAME, Durum)
+            SELECT CODE, NAME, 1
+            FROM {logoDatabase}..LG_{firmaNumarasi}_ITEMS
+            WHERE SPECODE IN ('{malzemeKodlariStr}')
+            AND NOT EXISTS (
+                SELECT 1
+                FROM [TNM.MALZEME FİYAT]
+                WHERE CODE = {logoDatabase}..LG_{firmaNumarasi}_ITEMS.CODE
+            )";
+                using (SqlCommand insertCommand = new SqlCommand(insertQuery, connection))
                 {
-                    command.Parameters.AddWithValue("@MalzemeKodu", malzemeKodu);
-                    command.ExecuteNonQuery();
+                    insertCommand.ExecuteNonQuery();
+                }
+
+                // 2. Update işlemi
+                string updateQuery = $@"
+            UPDATE [TNM.MALZEME FİYAT]
+            SET Durum = 0
+            WHERE CODE NOT IN (
+                SELECT CODE
+                FROM {logoDatabase}..LG_{firmaNumarasi}_ITEMS
+                WHERE SPECODE IN ('{malzemeKodlariStr}')
+            )";
+                using (SqlCommand updateCommand = new SqlCommand(updateQuery, connection))
+                {
+                    updateCommand.ExecuteNonQuery();
+                }
+
+                // 3. Delete işlemi
+                string deleteQuery = @"
+            DELETE FROM [TNM.MALZEME FİYAT]
+            WHERE Durum = 0";
+                using (SqlCommand deleteCommand = new SqlCommand(deleteQuery, connection))
+                {
+                    deleteCommand.ExecuteNonQuery();
                 }
             }
         }
+
+
+
 
         private void LoadData()
         {
@@ -132,12 +159,12 @@ namespace Tesla_CanToptan
                 command.ExecuteNonQuery();
             }
         }
-
         private void LoadLocalSettings()
         {
             Txt_MalzemeK.Text = Properties.Settings.Default.MalzemeKodu;
             Txt_FirmaKHK.Text = Properties.Settings.Default.FirmaKodu;
             Txt_BayiKHK.Text = Properties.Settings.Default.BayiKodu;
+            Txt_TasiciKod.Text = Properties.Settings.Default.Tasiycikodu;
         }
 
         private void SaveLocalSettings()
@@ -145,7 +172,35 @@ namespace Tesla_CanToptan
             Properties.Settings.Default.MalzemeKodu = Txt_MalzemeK.Text;
             Properties.Settings.Default.FirmaKodu = Txt_FirmaKHK.Text;
             Properties.Settings.Default.BayiKodu = Txt_BayiKHK.Text;
+            Properties.Settings.Default.Tasiycikodu = Txt_TasiciKod.Text;
             Properties.Settings.Default.Save();
+        }
+
+        private void Btn_Güncelle_Click(object sender, EventArgs e)
+        {
+            LoadLocalSettings();  // Ayarları önceden yükle
+            InsertData();         // Veri ekle
+            LoadData();           // Veri yükle
+            ConfigureGrid();
+
+            Txt_MalzemeK.EditValueChanged += (s, args) => SaveLocalSettings();
+            Txt_FirmaKHK.EditValueChanged += (s, args) => SaveLocalSettings();
+            Txt_BayiKHK.EditValueChanged += (s, args) => SaveLocalSettings();
+            Txt_TasiciKod.EditValueChanged += (s, args) => SaveLocalSettings();
+        }
+
+        private void Frm_SatışTanımları_Load(object sender, EventArgs e)
+        {
+            LoadLocalSettings();  // Ayarları önceden yükle
+            InsertData();         // Veri ekle
+            LoadData();           // Veri yükle
+            ConfigureGrid();      // Grid'i yapılandır;
+
+            Txt_MalzemeK.EditValueChanged += (s, args) => SaveLocalSettings();
+            Txt_FirmaKHK.EditValueChanged += (s, args) => SaveLocalSettings();
+            Txt_BayiKHK.EditValueChanged += (s, args) => SaveLocalSettings();
+            Txt_TasiciKod.EditValueChanged += (s, args) => SaveLocalSettings();
+
         }
     }
 }

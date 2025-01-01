@@ -58,5 +58,17 @@ namespace Tesla_CanToptan.Properties {
                 this["BayiKodu"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string Tasiycikodu {
+            get {
+                return ((string)(this["Tasiycikodu"]));
+            }
+            set {
+                this["Tasiycikodu"] = value;
+            }
+        }
     }
 }

@@ -721,9 +721,16 @@ namespace Tesla_CanToptan
                     SOURCE_WH = SelectedAmbarNR,
                     EINVOICE = accepTeInv.ACCEPTEINV == "1" ? "1" : "2", // ACCEPTEINV = "1" ise EINVOICE = "1"
                     PROFILE_ID = accepTeInv.PROFILEID == "1" ? "1" : "2", // PROFILEID = "1" ise PROFILE_ID = "1"
+                    EINSTEAD_OF_DISPATCH = accepTeInv.ACCEPTEINV == "1" ? "1" : null,
+                    EDURATION_TYPE= "0",
                     EINVOICE_TYPE = "2" ,
+                    EBOOK_DOCTYPE = "99",
+                    ESTATUS =accepTeInv.ACCEPTEINV == "1"? "10" :"2",
+                    SHIPPING_AGENT = Properties.Settings.Default.Tasiycikodu,
                     EARCHIVEDETR_SENDMOD = accepTeInv.ACCEPTEINV == "1" ? null : "2", // Aynı şekilde
                     EARCHIVEDETR_INTPAYMENTTYPE = accepTeInv.ACCEPTEINV == "1" ? null : "4", // Aynı şekilde
+                    EARCHIVEDETR_INSTEADOFDESP = accepTeInv.ACCEPTEINV == "1" ? null : "1",
+                    EARCHIVEDETR_EARCHIVESTATUS = accepTeInv.ACCEPTEINV =="1" ? null : "2",
                     TRANSACTIONS = new { items }
                 };
 
