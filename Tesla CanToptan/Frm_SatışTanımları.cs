@@ -178,9 +178,9 @@ namespace Tesla_CanToptan
 
         private void Btn_Güncelle_Click(object sender, EventArgs e)
         {
-            LoadLocalSettings();  // Ayarları önceden yükle
-            InsertData();         // Veri ekle
-            LoadData();           // Veri yükle
+            LoadLocalSettings();  
+            InsertData();         
+            LoadData();           
             ConfigureGrid();
 
             Txt_MalzemeK.EditValueChanged += (s, args) => SaveLocalSettings();
@@ -191,10 +191,10 @@ namespace Tesla_CanToptan
 
         private void Frm_SatışTanımları_Load(object sender, EventArgs e)
         {
-            LoadLocalSettings();  // Ayarları önceden yükle
-            InsertData();         // Veri ekle
-            LoadData();           // Veri yükle
-            ConfigureGrid();      // Grid'i yapılandır;
+            LoadLocalSettings();  
+            InsertData();         
+            LoadData();           
+            ConfigureGrid();      
 
             Txt_MalzemeK.EditValueChanged += (s, args) => SaveLocalSettings();
             Txt_FirmaKHK.EditValueChanged += (s, args) => SaveLocalSettings();

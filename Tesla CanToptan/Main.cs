@@ -25,7 +25,7 @@ namespace Tesla_CanToptan
         }
         SqlConnectionClass bgl = new SqlConnectionClass();
         private List<Fatura> faturalar = new List<Fatura>();
-        
+
 
         private void Btn_DosayaSec_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
@@ -45,19 +45,19 @@ namespace Tesla_CanToptan
                         LB_DosyaAdı.Text = Path.GetFileName(filePath);
                         LB_Yol.Text = filePath;
                         string[] faturaVerisi = File.ReadAllLines(filePath, Encoding.GetEncoding("ISO-8859-9"));
-                        faturalar = ParseFaturalar(faturaVerisi);  
+                        faturalar = ParseFaturalar(faturaVerisi);
 
                         InsertDataIntoDatabase(faturalar);
-                        ExecuteProcedures(); 
+                        ExecuteProcedures();
 
-                        
+
                         List<Fatura> updatedFaturalarFromDb = GetFaturalarFromDatabase();
 
-                        
+
                         gridControl1.DataSource = updatedFaturalarFromDb;
                         gridControl1.ForceInitialize();
                         LB_FaturaSayısı.Text = updatedFaturalarFromDb.Count.ToString();
-                        
+
 
                         faturalar = updatedFaturalarFromDb;
                     }
@@ -179,13 +179,14 @@ namespace Tesla_CanToptan
             return null;
         }
 
+
         private void InsertDataIntoDatabase(List<Fatura> faturalar)
         {
             using (SqlConnection connection = bgl.baglanti())
             {
                 foreach (var fatura in faturalar)
                 {
-                    
+
                     string insertFaturaBaslikQuery = @"
     INSERT INTO [HRK.FaturaBasliklari] 
     (TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, BayiKarKDV, FirmaKarKDV, ToplamTutar)
@@ -262,7 +263,7 @@ namespace Tesla_CanToptan
                 }
                 reader.Close();
 
-             
+
                 foreach (var fatura in faturalar)
                 {
                     string selectKalemQuery = "SELECT * FROM [HRK.FaturaKalemleri] WHERE FaturaId = @FaturaId";
@@ -317,7 +318,7 @@ namespace Tesla_CanToptan
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "BayiKarKDV", Caption = "Bayi Kar Kdv", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "FirmaKarKDV", Caption = "Firma Kar Kav", Visible = true });
 
-           
+
 
             GridView detailView = new GridView(gridControl1);
             detailView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "UrunKodu", Caption = "Malzeme Kodu", Visible = true });
@@ -350,13 +351,13 @@ namespace Tesla_CanToptan
             masterView.Appearance.Row.Font = new System.Drawing.Font("Tahoma", 10);
             masterView.Appearance.Row.ForeColor = System.Drawing.Color.Black;
 
-           
+
             foreach (DevExpress.XtraGrid.Columns.GridColumn column in masterView.Columns)
             {
                 column.AppearanceHeader.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
             }
 
-            
+
             detailView.OptionsView.EnableAppearanceEvenRow = true;
             detailView.OptionsView.EnableAppearanceOddRow = true;
             detailView.Appearance.EvenRow.BackColor = System.Drawing.Color.LightGreen;
@@ -366,13 +367,13 @@ namespace Tesla_CanToptan
             detailView.Appearance.Row.Font = new System.Drawing.Font("Tahoma", 10);
             detailView.Appearance.Row.ForeColor = System.Drawing.Color.Black;
 
-            
+
             foreach (DevExpress.XtraGrid.Columns.GridColumn column in detailView.Columns)
             {
                 column.AppearanceHeader.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
             }
 
-          
+
             gridControl1.LookAndFeel.UseDefaultLookAndFeel = false;
             gridControl1.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Flat;
         }
@@ -513,33 +514,33 @@ namespace Tesla_CanToptan
             string logoDatabase = ConfigurationManager.AppSettings["LogoDatabase"];
             string firmaNumarasi = ConfigurationManager.AppSettings["FirmaNumarasi"];
 
-            
+
             LoadComboBox(Com_isyeri, $"SELECT [NR], [NAME] FROM {logoDatabase}..[L_CAPIDEPT] WHERE [FIRMNR] = {firmaNumarasi}");
             LoadComboBox(Com_Bolum, $"SELECT [NR], [NAME] FROM {logoDatabase}..[L_CAPIDIV] WHERE [FIRMNR] = {firmaNumarasi}");
             LoadComboBox(Com_Fabrika, $"SELECT [NR], [NAME] FROM {logoDatabase}..[L_CAPIFACTORY] WHERE [FIRMNR] = {firmaNumarasi}");
 
-           
+
             Com_isyeri.SelectedValueChanged += (s, e) =>
             {
                 SelectedIşyeriNR = (Com_isyeri.SelectedItem as KeyValuePair<string, string>?)?.Key;
-                LoadAmbarComboBox(); 
+                LoadAmbarComboBox();
             };
 
             Com_Bolum.SelectedValueChanged += (s, e) =>
             {
                 SelectedBolumNR = (Com_Bolum.SelectedItem as KeyValuePair<string, string>?)?.Key;
-                LoadAmbarComboBox();  
+                LoadAmbarComboBox();
             };
 
             Com_Fabrika.SelectedValueChanged += (s, e) =>
             {
                 SelectedFabrikaNR = (Com_Fabrika.SelectedItem as KeyValuePair<string, string>?)?.Key;
-                LoadAmbarComboBox();  
+                LoadAmbarComboBox();
             };
             Com_Ambar.SelectedValueChanged += (s, e) =>
             {
                 SelectedAmbarNR = (Com_Ambar.SelectedItem as KeyValuePair<string, string>?)?.Key;
-               
+
             };
         }
 
@@ -550,7 +551,7 @@ namespace Tesla_CanToptan
                 string logoDatabase = ConfigurationManager.AppSettings["LogoDatabase"];
                 string firmaNumarasi = ConfigurationManager.AppSettings["FirmaNumarasi"];
 
-                // Com_Ambar'ı sadece seçilen Bölüm ve Fabrika NR'leri mevcutsa yükle
+
                 LoadComboBox(Com_Ambar, $"SELECT [NR], [NAME] FROM {logoDatabase}..[L_CAPIWHOUSE] WHERE [FIRMNR] = {firmaNumarasi} AND DIVISNR = {SelectedBolumNR} AND FACTNR = {SelectedFabrikaNR}");
             }
         }
@@ -564,18 +565,18 @@ namespace Tesla_CanToptan
                     SqlCommand command = new SqlCommand(query, connection);
                     SqlDataReader reader = command.ExecuteReader();
 
-                    comboBox.Properties.Items.Clear(); 
+                    comboBox.Properties.Items.Clear();
 
                     while (reader.Read())
                     {
-                        
+
                         comboBox.Properties.Items.Add(new KeyValuePair<string, string>(
                             reader["NR"].ToString(), // Key: NR
                             reader["NAME"].ToString() // Value: NAME
                         ));
                     }
 
-                    comboBox.Properties.NullText = "Seçiniz"; 
+                    comboBox.Properties.NullText = "Seçiniz";
                 }
             }
             catch (Exception ex)
@@ -584,22 +585,27 @@ namespace Tesla_CanToptan
             }
         }
 
-       
+
         public string SelectedIşyeriNR { get; private set; }
         public string SelectedBolumNR { get; private set; }
         public string SelectedFabrikaNR { get; private set; }
         public string SelectedAmbarNR { get; private set; }
 
+
         private async void Btn_LogoAktar_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            
             if (gridControl1.MainView.RowCount == 0)
             {
                 MessageBox.Show("Lütfen fatura verilerini ekleyin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return; 
+                return;
             }
             WaitForm waitForm = new WaitForm();
-            waitForm.Show();
+
+            _ = Task.Run(() =>
+              {
+                  this.Invoke(new Action(() => waitForm.ShowDialog()));
+              });
+
 
             try
             {
@@ -612,16 +618,16 @@ namespace Tesla_CanToptan
                 string url = ConfigurationManager.AppSettings["Url"];
                 string logoDatabase = ConfigurationManager.AppSettings["LogoDatabase"];
 
-                // Token al
-                string token = await GetAccessTokenAsync(logoKullanici, logoParola, firmaNumarasi, url);
-                waitForm.UpdateDescription("Faturalar aktarılıyor...");
-
                 foreach (var fatura in faturalar)
                 {
+                    // Token al
+                    string token = await GetAccessTokenAsync(logoKullanici, logoParola, firmaNumarasi, url);
+                    waitForm.UpdateDescription($"{fatura.FaturaNumarasi} Nolu Fatura Aktarılıyor...");
+
                     await PostFaturaAsync(token, fatura, url);
                 }
 
-                MessageBox.Show("Fatura başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Tüm faturalar başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -633,6 +639,7 @@ namespace Tesla_CanToptan
                 waitForm.Close();
             }
         }
+
 
         private async Task<string> GetAccessTokenAsync(string logoKullanici, string logoParola, string firmaNumarasi, string url)
         {
@@ -712,25 +719,27 @@ namespace Tesla_CanToptan
                 {
                     TYPE = "8",
                     NUMBER = fatura.FaturaNumarasi,
+                    DOC_NUMBER = fatura.FaturaNumarasi,
+                    DOC_TRACK_NR = "TESLA",
                     DATE = fatura.TarihSaat,
                     ARP_CODE = fatura.CariKodu,
                     CURRSEL_TOTALS = "1",
-                    FACTORY= SelectedFabrikaNR,
+                    FACTORY = SelectedFabrikaNR,
                     DIVISION = SelectedBolumNR,
                     DEPARTMENT = SelectedIşyeriNR,
                     SOURCE_WH = SelectedAmbarNR,
                     EINVOICE = accepTeInv.ACCEPTEINV == "1" ? "1" : "2", // ACCEPTEINV = "1" ise EINVOICE = "1"
                     PROFILE_ID = accepTeInv.PROFILEID == "1" ? "1" : "2", // PROFILEID = "1" ise PROFILE_ID = "1"
                     EINSTEAD_OF_DISPATCH = accepTeInv.ACCEPTEINV == "1" ? "1" : null,
-                    EDURATION_TYPE= "0",
-                    EINVOICE_TYPE = "2" ,
+                    EDURATION_TYPE = "0",
+                    EINVOICE_TYPE = "2",
                     EBOOK_DOCTYPE = "99",
-                    ESTATUS =accepTeInv.ACCEPTEINV == "1"? "10" :"2",
+                    ESTATUS = accepTeInv.ACCEPTEINV == "1" ? "10" : "2",
                     SHIPPING_AGENT = Properties.Settings.Default.Tasiycikodu,
                     EARCHIVEDETR_SENDMOD = accepTeInv.ACCEPTEINV == "1" ? null : "2", // Aynı şekilde
                     EARCHIVEDETR_INTPAYMENTTYPE = accepTeInv.ACCEPTEINV == "1" ? null : "4", // Aynı şekilde
                     EARCHIVEDETR_INSTEADOFDESP = accepTeInv.ACCEPTEINV == "1" ? null : "1",
-                    EARCHIVEDETR_EARCHIVESTATUS = accepTeInv.ACCEPTEINV =="1" ? null : "2",
+                    EARCHIVEDETR_EARCHIVESTATUS = accepTeInv.ACCEPTEINV == "1" ? null : "2",
                     TRANSACTIONS = new { items }
                 };
 
@@ -750,7 +759,7 @@ namespace Tesla_CanToptan
             string accepTeInv = null;
             string profileId = null;
 
-            
+
             string logoDatabase = ConfigurationManager.AppSettings["LogoDatabase"];
             string firmaNumarasi = ConfigurationManager.AppSettings["FirmaNumarasi"];
 
@@ -772,9 +781,10 @@ namespace Tesla_CanToptan
             return (accepTeInv, profileId);
         }
 
-       
     }
-
-
 }
+
+
+
+    
 

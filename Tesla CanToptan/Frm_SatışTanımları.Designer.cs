@@ -72,11 +72,11 @@ namespace Tesla_CanToptan
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
             this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(8)))), ((int)(((byte)(157)))), ((int)(((byte)(227)))));
-            this.label2.Location = new System.Drawing.Point(12, 575);
+            this.label2.Location = new System.Drawing.Point(4, 573);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(140, 13);
+            this.label2.Size = new System.Drawing.Size(162, 13);
             this.label2.TabIndex = 34;
-            this.label2.Text = "Firma Kdv Hizmet Kodu:";
+            this.label2.Text = "Firma Kar Kdv Hizmet Kodu:";
             // 
             // label1
             // 
@@ -85,13 +85,13 @@ namespace Tesla_CanToptan
             this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(8)))), ((int)(((byte)(157)))), ((int)(((byte)(227)))));
             this.label1.Location = new System.Drawing.Point(12, 544);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(132, 13);
+            this.label1.Size = new System.Drawing.Size(154, 13);
             this.label1.TabIndex = 33;
-            this.label1.Text = "Bayi Kdv Hizmet Kodu:";
+            this.label1.Text = "Bayi Kar Kdv Hizmet Kodu:";
             // 
             // Txt_FirmaKHK
             // 
-            this.Txt_FirmaKHK.Location = new System.Drawing.Point(157, 567);
+            this.Txt_FirmaKHK.Location = new System.Drawing.Point(172, 569);
             this.Txt_FirmaKHK.Name = "Txt_FirmaKHK";
             this.Txt_FirmaKHK.Properties.Appearance.Font = new System.Drawing.Font("Tahoma", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
             this.Txt_FirmaKHK.Properties.Appearance.Options.UseFont = true;
@@ -100,7 +100,7 @@ namespace Tesla_CanToptan
             // 
             // Txt_BayiKHK
             // 
-            this.Txt_BayiKHK.Location = new System.Drawing.Point(157, 537);
+            this.Txt_BayiKHK.Location = new System.Drawing.Point(172, 537);
             this.Txt_BayiKHK.Name = "Txt_BayiKHK";
             this.Txt_BayiKHK.Properties.Appearance.Font = new System.Drawing.Font("Tahoma", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
             this.Txt_BayiKHK.Properties.Appearance.Options.UseFont = true;
@@ -113,7 +113,7 @@ namespace Tesla_CanToptan
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
             this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(8)))), ((int)(((byte)(157)))), ((int)(((byte)(227)))));
-            this.label3.Location = new System.Drawing.Point(381, 544);
+            this.label3.Location = new System.Drawing.Point(417, 544);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(119, 13);
             this.label3.TabIndex = 36;
@@ -122,7 +122,7 @@ namespace Tesla_CanToptan
             // Txt_MalzemeK
             // 
             this.Txt_MalzemeK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.Txt_MalzemeK.Location = new System.Drawing.Point(515, 537);
+            this.Txt_MalzemeK.Location = new System.Drawing.Point(551, 537);
             this.Txt_MalzemeK.Name = "Txt_MalzemeK";
             this.Txt_MalzemeK.Properties.Appearance.Font = new System.Drawing.Font("Tahoma", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
             this.Txt_MalzemeK.Properties.Appearance.Options.UseFont = true;
@@ -135,7 +135,7 @@ namespace Tesla_CanToptan
             this.label4.AutoSize = true;
             this.label4.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
             this.label4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(8)))), ((int)(((byte)(157)))), ((int)(((byte)(227)))));
-            this.label4.Location = new System.Drawing.Point(420, 576);
+            this.label4.Location = new System.Drawing.Point(456, 576);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(80, 13);
             this.label4.TabIndex = 38;
@@ -144,7 +144,7 @@ namespace Tesla_CanToptan
             // Txt_TasiciKod
             // 
             this.Txt_TasiciKod.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.Txt_TasiciKod.Location = new System.Drawing.Point(515, 570);
+            this.Txt_TasiciKod.Location = new System.Drawing.Point(551, 570);
             this.Txt_TasiciKod.Name = "Txt_TasiciKod";
             this.Txt_TasiciKod.Properties.Appearance.Font = new System.Drawing.Font("Tahoma", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
             this.Txt_TasiciKod.Properties.Appearance.Options.UseFont = true;

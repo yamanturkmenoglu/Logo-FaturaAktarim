@@ -8,7 +8,7 @@ namespace Tesla_CanToptan
         public WaitForm()
         {
             InitializeComponent();
-            this.progressPanel1.AutoHeight = true;
+            
             this.progressPanel1.Caption = "Lütfen Bekleyin...";
             this.progressPanel1.Description = "Yükleniyor...";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;

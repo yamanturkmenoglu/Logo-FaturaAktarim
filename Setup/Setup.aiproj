@@ -2,23 +2,23 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">All</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>f65c5cda-978d-4ee3-b2c7-8d3c86ad4d43</ProjectGuid>
+    <ProjectGuid>1e85d542-8957-4803-b3bd-ddc6dae3679d</ProjectGuid>
     <OutputType>msi</OutputType>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Setup.aip</StartupFile>
+    <StartupFile>SETUP.aip</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <IsWindowsApplication>True</IsWindowsApplication>
-    <AssemblyName>Setup</AssemblyName>
-    <Name>Setup</Name>
-    <RootNamespace>Setup</RootNamespace>
+    <AssemblyName>SETUP</AssemblyName>
+    <Name>SETUP</Name>
+    <RootNamespace>SETUP</RootNamespace>
     <LoadFromTemplate>
     </LoadFromTemplate>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'DefaultBuild' " />
   <ItemGroup>
-    <Compile Include="Setup.aip">
+    <Compile Include="SETUP.aip">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
