@@ -74,20 +74,20 @@ namespace Tesla_CanToptan
             this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(8)))), ((int)(((byte)(157)))), ((int)(((byte)(227)))));
             this.label2.Location = new System.Drawing.Point(4, 573);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(162, 13);
+            this.label2.Size = new System.Drawing.Size(140, 13);
             this.label2.TabIndex = 34;
-            this.label2.Text = "Firma Kar Kdv Hizmet Kodu:";
+            this.label2.Text = "Firma Kdv Hizmet Kodu:";
             // 
             // label1
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
             this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(8)))), ((int)(((byte)(157)))), ((int)(((byte)(227)))));
-            this.label1.Location = new System.Drawing.Point(12, 544);
+            this.label1.Location = new System.Drawing.Point(4, 544);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(154, 13);
+            this.label1.Size = new System.Drawing.Size(132, 13);
             this.label1.TabIndex = 33;
-            this.label1.Text = "Bayi Kar Kdv Hizmet Kodu:";
+            this.label1.Text = "Bayi Kdv Hizmet Kodu:";
             // 
             // Txt_FirmaKHK
             // 

@@ -51,22 +51,22 @@ namespace Tesla_CanToptan
             this.label1 = new System.Windows.Forms.Label();
             this.Com_isyeri = new DevExpress.XtraEditors.ComboBoxEdit();
             this.panel2 = new System.Windows.Forms.Panel();
-            this.Com_Bolum = new DevExpress.XtraEditors.ComboBoxEdit();
-            this.Com_Fabrika = new DevExpress.XtraEditors.ComboBoxEdit();
-            this.label4 = new System.Windows.Forms.Label();
-            this.label6 = new System.Windows.Forms.Label();
-            this.label7 = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
             this.Com_Ambar = new DevExpress.XtraEditors.ComboBoxEdit();
+            this.label7 = new System.Windows.Forms.Label();
+            this.label6 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.Com_Fabrika = new DevExpress.XtraEditors.ComboBoxEdit();
+            this.Com_Bolum = new DevExpress.XtraEditors.ComboBoxEdit();
             ((System.ComponentModel.ISupportInitialize)(this.ribbonControl1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gridControl1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gridView1)).BeginInit();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Com_isyeri.Properties)).BeginInit();
             this.panel2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.Com_Bolum.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.Com_Fabrika.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.Com_Ambar.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.Com_Fabrika.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.Com_Bolum.Properties)).BeginInit();
             this.SuspendLayout();
             // 
             // ribbonControl1
@@ -284,56 +284,6 @@ namespace Tesla_CanToptan
             this.panel2.Size = new System.Drawing.Size(397, 81);
             this.panel2.TabIndex = 12;
             // 
-            // Com_Bolum
-            // 
-            this.Com_Bolum.Location = new System.Drawing.Point(56, 38);
-            this.Com_Bolum.MenuManager = this.ribbonControl1;
-            this.Com_Bolum.Name = "Com_Bolum";
-            this.Com_Bolum.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
-            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.Com_Bolum.Size = new System.Drawing.Size(133, 20);
-            this.Com_Bolum.TabIndex = 12;
-            // 
-            // Com_Fabrika
-            // 
-            this.Com_Fabrika.Location = new System.Drawing.Point(256, 13);
-            this.Com_Fabrika.MenuManager = this.ribbonControl1;
-            this.Com_Fabrika.Name = "Com_Fabrika";
-            this.Com_Fabrika.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
-            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.Com_Fabrika.Size = new System.Drawing.Size(133, 20);
-            this.Com_Fabrika.TabIndex = 13;
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
-            this.label4.Location = new System.Drawing.Point(3, 15);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(35, 14);
-            this.label4.TabIndex = 14;
-            this.label4.Text = "İşyeri";
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
-            this.label6.Location = new System.Drawing.Point(203, 16);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(44, 14);
-            this.label6.TabIndex = 15;
-            this.label6.Text = "Fabrika";
-            // 
-            // label7
-            // 
-            this.label7.AutoSize = true;
-            this.label7.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
-            this.label7.Location = new System.Drawing.Point(3, 40);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(40, 14);
-            this.label7.TabIndex = 16;
-            this.label7.Text = "Bölüm";
-            // 
             // label8
             // 
             this.label8.AutoSize = true;
@@ -353,6 +303,56 @@ namespace Tesla_CanToptan
             new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
             this.Com_Ambar.Size = new System.Drawing.Size(133, 20);
             this.Com_Ambar.TabIndex = 17;
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
+            this.label7.Location = new System.Drawing.Point(3, 40);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(40, 14);
+            this.label7.TabIndex = 16;
+            this.label7.Text = "Bölüm";
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
+            this.label6.Location = new System.Drawing.Point(203, 16);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(44, 14);
+            this.label6.TabIndex = 15;
+            this.label6.Text = "Fabrika";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(162)));
+            this.label4.Location = new System.Drawing.Point(3, 15);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(35, 14);
+            this.label4.TabIndex = 14;
+            this.label4.Text = "İşyeri";
+            // 
+            // Com_Fabrika
+            // 
+            this.Com_Fabrika.Location = new System.Drawing.Point(256, 13);
+            this.Com_Fabrika.MenuManager = this.ribbonControl1;
+            this.Com_Fabrika.Name = "Com_Fabrika";
+            this.Com_Fabrika.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.Com_Fabrika.Size = new System.Drawing.Size(133, 20);
+            this.Com_Fabrika.TabIndex = 13;
+            // 
+            // Com_Bolum
+            // 
+            this.Com_Bolum.Location = new System.Drawing.Point(56, 38);
+            this.Com_Bolum.MenuManager = this.ribbonControl1;
+            this.Com_Bolum.Name = "Com_Bolum";
+            this.Com_Bolum.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.Com_Bolum.Size = new System.Drawing.Size(133, 20);
+            this.Com_Bolum.TabIndex = 12;
             // 
             // Main
             // 
@@ -378,9 +378,9 @@ namespace Tesla_CanToptan
             ((System.ComponentModel.ISupportInitialize)(this.Com_isyeri.Properties)).EndInit();
             this.panel2.ResumeLayout(false);
             this.panel2.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.Com_Bolum.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.Com_Fabrika.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.Com_Ambar.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.Com_Fabrika.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.Com_Bolum.Properties)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 

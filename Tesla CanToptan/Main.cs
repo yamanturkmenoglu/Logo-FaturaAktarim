@@ -14,6 +14,7 @@ using System.Linq;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Configuration;
+using System.Text.RegularExpressions;
 
 namespace Tesla_CanToptan
 {
@@ -67,6 +68,19 @@ namespace Tesla_CanToptan
                     }
                 }
             }
+        }
+
+        void Refresh_Data()
+        {
+            List<Fatura> updatedFaturalarFromDb = GetFaturalarFromDatabase();
+            faturalar = updatedFaturalarFromDb;
+            gridControl1.DataSource = null; 
+            gridControl1.DataSource = faturalar;
+            gridControl1.ForceInitialize();
+            gridControl1.Refresh();
+
+            LB_FaturaSayısı.Text = faturalar.Count.ToString();
+
         }
 
         private List<Fatura> ParseFaturalar(string[] faturaVerisi)
@@ -602,10 +616,11 @@ namespace Tesla_CanToptan
             WaitForm waitForm = new WaitForm();
 
             _ = Task.Run(() =>
-              {
-                  this.Invoke(new Action(() => waitForm.ShowDialog()));
-              });
+            {
+                this.Invoke(new Action(() => waitForm.ShowDialog()));
+            });
 
+            List<string> errorMessages = new List<string>();
 
             try
             {
@@ -620,14 +635,23 @@ namespace Tesla_CanToptan
 
                 foreach (var fatura in faturalar)
                 {
-                    // Token al
+                    
                     string token = await GetAccessTokenAsync(logoKullanici, logoParola, firmaNumarasi, url);
                     waitForm.UpdateDescription($"{fatura.FaturaNumarasi} Nolu Fatura Aktarılıyor...");
 
-                    await PostFaturaAsync(token, fatura, url);
+                    await PostFaturaAsync(token, fatura, url, errorMessages);
                 }
 
-                MessageBox.Show("Tüm faturalar başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (errorMessages.Any())
+                {
+                    string errorMessage = "Bazı faturalar aktarılırken hata oluştu:\n\n" + string.Join("\n", errorMessages);
+                    MessageBox.Show(errorMessage, "Faturalar Aktarılırken Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    
+                }
+                else
+                {
+                    MessageBox.Show("Tüm faturalar başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
             catch (Exception ex)
             {
@@ -635,8 +659,13 @@ namespace Tesla_CanToptan
             }
             finally
             {
-                DeleteDataFromDatabase();
                 waitForm.Close();
+
+                List<int> failedFaturaIds = GetFailedFaturaIds(errorMessages);
+
+                DeleteSuccessfulFaturas(failedFaturaIds);
+
+                Refresh_Data();
             }
         }
 
@@ -672,34 +701,28 @@ namespace Tesla_CanToptan
             }
         }
 
-        private async Task PostFaturaAsync(string token, Fatura fatura, string url)
+        private async Task PostFaturaAsync(string token, Fatura fatura, string url, List<string> errorMessages)
         {
             using (var client = new HttpClient())
             {
                 var apiUrl = $"{url}/api/v1/salesInvoices";
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                // Faturadaki kalemleri hazırlama
-                var items = new List<object>();
-
-                foreach (var kalem in fatura.Kalemler)
+                var items = fatura.Kalemler.Select(kalem => new
                 {
-                    items.Add(new
-                    {
-                        TYPE = "0",
-                        MASTER_CODE = kalem.UrunKodu,
-                        QUANTITY = kalem.Miktar,
-                        PRICE = kalem.BirimFiyat,
-                        UNIT_CODE = "ADET"
-                    });
-                }
+                    TYPE = "0",
+                    MASTER_CODE = kalem.UrunKodu,
+                    QUANTITY = kalem.Miktar,
+                    PRICE = kalem.BirimFiyat,
+                    UNIT_CODE = "ADET"
+                }).ToList();
 
                 // Sabit iki hizmet
                 items.Add(new
                 {
                     TYPE = "4",
                     MASTER_CODE = Properties.Settings.Default.BayiKodu,
-                    QUANTITY = "1",
+                    QUANTITY = 1m,
                     PRICE = fatura.BayiKarKDV,
                     UNIT_CODE = "ADET"
                 });
@@ -708,7 +731,7 @@ namespace Tesla_CanToptan
                 {
                     TYPE = "4",
                     MASTER_CODE = Properties.Settings.Default.FirmaKodu,
-                    QUANTITY = "1",
+                    QUANTITY = 1m,
                     PRICE = fatura.FirmaKarKDV,
                     UNIT_CODE = "ADET"
                 });
@@ -728,16 +751,16 @@ namespace Tesla_CanToptan
                     DIVISION = SelectedBolumNR,
                     DEPARTMENT = SelectedIşyeriNR,
                     SOURCE_WH = SelectedAmbarNR,
-                    EINVOICE = accepTeInv.ACCEPTEINV == "1" ? "1" : "2", // ACCEPTEINV = "1" ise EINVOICE = "1"
-                    PROFILE_ID = accepTeInv.PROFILEID == "1" ? "1" : "2", // PROFILEID = "1" ise PROFILE_ID = "1"
+                    EINVOICE = accepTeInv.ACCEPTEINV == "1" ? "1" : "2",
+                    PROFILE_ID = accepTeInv.PROFILEID == "1" ? "1" : "2",
                     EINSTEAD_OF_DISPATCH = accepTeInv.ACCEPTEINV == "1" ? "1" : null,
                     EDURATION_TYPE = "0",
                     EINVOICE_TYPE = "2",
                     EBOOK_DOCTYPE = "99",
                     ESTATUS = accepTeInv.ACCEPTEINV == "1" ? "10" : "2",
                     SHIPPING_AGENT = Properties.Settings.Default.Tasiycikodu,
-                    EARCHIVEDETR_SENDMOD = accepTeInv.ACCEPTEINV == "1" ? null : "2", // Aynı şekilde
-                    EARCHIVEDETR_INTPAYMENTTYPE = accepTeInv.ACCEPTEINV == "1" ? null : "4", // Aynı şekilde
+                    EARCHIVEDETR_SENDMOD = accepTeInv.ACCEPTEINV == "1" ? null : "2",
+                    EARCHIVEDETR_INTPAYMENTTYPE = accepTeInv.ACCEPTEINV == "1" ? null : "4",
                     EARCHIVEDETR_INSTEADOFDESP = accepTeInv.ACCEPTEINV == "1" ? null : "1",
                     EARCHIVEDETR_EARCHIVESTATUS = accepTeInv.ACCEPTEINV == "1" ? null : "2",
                     TRANSACTIONS = new { items }
@@ -749,10 +772,11 @@ namespace Tesla_CanToptan
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    throw new Exception($"Fatura aktarımı başarısız! HTTP {response.StatusCode}: {errorContent}");
+                    errorMessages.Add($"Fatura {fatura.FaturaId} ----- {fatura.FaturaNumarasi} aktarımı başarısız! Hata: {errorContent}");
                 }
             }
         }
+
 
         private async Task<(string ACCEPTEINV, string PROFILEID)> GetAcceptEInvAndProfileIdAsync(string cariKodu)
         {
@@ -781,10 +805,348 @@ namespace Tesla_CanToptan
             return (accepTeInv, profileId);
         }
 
+        List<int> GetFailedFaturaIds(List<string> errorMessages)
+        {
+            List<int> failedFaturaIds = new List<int>();
+
+            foreach (var message in errorMessages)
+            {
+                // Örnek hata mesajı: "Fatura 2 ----- 1001 aktarımı başarısız! Hata: ..."
+                var match = Regex.Match(message, @"Fatura (\d+)");
+                if (match.Success)
+                {
+                    failedFaturaIds.Add(int.Parse(match.Groups[1].Value));
+                }
+            }
+
+            return failedFaturaIds;
+        }
+        private void DeleteSuccessfulFaturas(List<int> failedFaturaIds)
+        {
+            using (SqlConnection connection = bgl.baglanti())
+            {
+               
+
+                if (failedFaturaIds == null || failedFaturaIds.Count == 0)
+                {
+                   
+                    string deleteKalemlerQuery = "DELETE FROM [HRK.FaturaKalemleri]";
+                    string deleteBasliklarQuery = "DELETE FROM [HRK.FaturaBasliklari]";
+
+                    using (SqlCommand deleteKalemlerCommand = new SqlCommand(deleteKalemlerQuery, connection))
+                    {
+                        deleteKalemlerCommand.ExecuteNonQuery();
+                    }
+
+                    using (SqlCommand deleteBasliklarCommand = new SqlCommand(deleteBasliklarQuery, connection))
+                    {
+                        deleteBasliklarCommand.ExecuteNonQuery();
+                    }
+                }
+                else
+                {
+                   
+                    string failedFaturasQuery = string.Join(",", failedFaturaIds.Select(id => $"{id}")); 
+                    string deleteKalemlerQuery = $@"
+            DELETE FROM [HRK.FaturaKalemleri]
+            WHERE FaturaId NOT IN ({failedFaturasQuery})";
+                    string deleteBasliklarQuery = $@"
+            DELETE FROM [HRK.FaturaBasliklari]
+            WHERE FaturaId NOT IN ({failedFaturasQuery})";
+
+                    using (SqlCommand deleteKalemlerCommand = new SqlCommand(deleteKalemlerQuery, connection))
+                    {
+                        deleteKalemlerCommand.ExecuteNonQuery();
+                    }
+
+                    using (SqlCommand deleteBasliklarCommand = new SqlCommand(deleteBasliklarQuery, connection))
+                    {
+                        deleteBasliklarCommand.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+
+
+        //private async void Btn_LogoAktar_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        //{
+        //    if (gridControl1.MainView.RowCount == 0)
+        //    {
+        //        MessageBox.Show("Lütfen fatura verilerini ekleyin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        //        return;
+        //    }
+
+        //    WaitForm waitForm = new WaitForm();
+        //    _ = Task.Run(() =>
+        //    {
+        //        this.Invoke(new Action(() => waitForm.ShowDialog()));
+        //    });
+
+
+        //    try
+        //    {
+        //        waitForm.UpdateCaption("İşlem Başladı");
+        //        waitForm.UpdateDescription("Faturalar hazırlanıyor...");
+
+
+        //        int batchSize = 100;
+        //        var faturaGruplari = faturalar
+        //            .Select((fatura, index) => new { fatura, index })
+        //            .GroupBy(x => x.index / batchSize)
+        //            .Select(grup => grup.Select(x => x.fatura).ToList())
+        //            .ToList();
+
+
+        //        while (faturaGruplari.Count < 10)
+        //        {
+        //            faturaGruplari.Add(new List<Fatura>());
+        //        }
+
+
+        //        var tasks = new List<Task>
+        //{
+        //    Task.Run(() => AktarBir(faturaGruplari[0])),
+        //    Task.Run(() => AktarIki(faturaGruplari[1])),
+        //    Task.Run(() => AktarUc(faturaGruplari[2])),
+        //    Task.Run(() => AktarDort(faturaGruplari[3])),
+        //    Task.Run(() => AktarBes(faturaGruplari[4])),
+        //    Task.Run(() => AktarAlti(faturaGruplari[5])),
+        //    Task.Run(() => AktarYedi(faturaGruplari[6])),
+        //    Task.Run(() => AktarSekiz(faturaGruplari[7])),
+        //    Task.Run(() => AktarDokuz(faturaGruplari[8])),
+        //    Task.Run(() => AktarOn(faturaGruplari[9]))
+        //};
+
+
+        //        await Task.WhenAll(tasks);
+
+        //        MessageBox.Show("Tüm faturalar başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show("Hata: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //    finally
+        //    {
+        //        DeleteDataFromDatabase();
+        //        waitForm.Close();
+        //    }
+        //}
+
+        //private async Task AktarBir(List<Fatura> faturalar)
+        //{
+        //    await Aktar(faturalar, "AktarBir");
+        //}
+
+        //private async Task AktarIki(List<Fatura> faturalar)
+        //{
+        //    await Aktar(faturalar, "AktarIki");
+        //}
+
+        //private async Task AktarUc(List<Fatura> faturalar)
+        //{
+        //    await Aktar(faturalar, "AktarUc");
+        //}
+
+        //private async Task AktarDort(List<Fatura> faturalar)
+        //{
+        //    await Aktar(faturalar, "AktarDort");
+        //}
+
+        //private async Task AktarBes(List<Fatura> faturalar)
+        //{
+        //    await Aktar(faturalar, "AktarBes");
+        //}
+
+        //private async Task AktarAlti(List<Fatura> faturalar)
+        //{
+        //    await Aktar(faturalar, "AktarAlti");
+        //}
+
+        //private async Task AktarYedi(List<Fatura> faturalar)
+        //{
+        //    await Aktar(faturalar, "AktarYedi");
+        //}
+
+        //private async Task AktarSekiz(List<Fatura> faturalar)
+        //{
+        //    await Aktar(faturalar, "AktarSekiz");
+        //}
+
+        //private async Task AktarDokuz(List<Fatura> faturalar)
+        //{
+        //    await Aktar(faturalar, "AktarDokuz");
+        //}
+
+        //private async Task AktarOn(List<Fatura> faturalar)
+        //{
+        //    await Aktar(faturalar, "AktarOn");
+        //}
+
+        //private async Task Aktar(List<Fatura> faturalar, string metodAdi)
+        //{
+        //    string logoKullanici = ConfigurationManager.AppSettings["LogoKullanici"];
+        //    string logoParola = ConfigurationManager.AppSettings["LogoParola"];
+        //    string firmaNumarasi = ConfigurationManager.AppSettings["FirmaNumarasi"];
+        //    string url = ConfigurationManager.AppSettings["Url"];
+
+
+
+        //    foreach (var fatura in faturalar)
+        //    {
+        //        try
+        //        {
+        //            string token = await GetAccessTokenAsync(logoKullanici, logoParola, firmaNumarasi, url);
+        //            await PostFaturaAsync(token, fatura, url);
+        //        }
+        //        catch (Exception ex)
+        //        {
+
+        //            MessageBox.Show($"{metodAdi} hatası: {ex.Message}");
+        //        }
+        //    }
+        //}
+
+        //private async Task<string> GetAccessTokenAsync(string logoKullanici, string logoParola, string firmaNumarasi, string url)
+        //{
+        //    if (string.IsNullOrEmpty(url))
+        //        throw new Exception("Url ayarı eksik!");
+
+        //    var tokenUrl = $"{url}/api/v1/token";
+
+        //    using (var client = new HttpClient())
+        //    {
+        //        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+        //            "Basic", "TUVGQVBFWDpGWEh4VGV4NThWd0pwbXNaSC9sSHVybkQ1elAwWVo3Tm14M0xZaDF1SFVvPQ==");
+
+        //        var body = new StringContent(
+        //            $"grant_type=password&username={logoKullanici}&firmno={firmaNumarasi}&password={logoParola}",
+        //            Encoding.UTF8,
+        //            "application/x-www-form-urlencoded");
+
+        //        var response = await client.PostAsync(tokenUrl, body);
+
+        //        if (!response.IsSuccessStatusCode)
+        //        {
+        //            var errorContent = await response.Content.ReadAsStringAsync();
+        //            throw new Exception($"Token alma başarısız! HTTP {response.StatusCode}: {errorContent}");
+        //        }
+
+        //        var responseBody = await response.Content.ReadAsStringAsync();
+        //        dynamic json = JsonConvert.DeserializeObject(responseBody);
+        //        return json.access_token;
+        //    }
+        //}
+        //private async Task PostFaturaAsync(string token, Fatura fatura, string url)
+        //{
+        //    using (var client = new HttpClient())
+        //    {
+        //        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        //        var apiUrl = $"{url}/api/v1/salesInvoices";
+
+
+        //        var items = fatura.Kalemler.Select(kalem => new
+        //        {
+        //            TYPE = "0",
+        //            MASTER_CODE = kalem.UrunKodu,
+        //            QUANTITY = kalem.Miktar,
+        //            PRICE = kalem.BirimFiyat,
+        //            UNIT_CODE = "ADET"
+        //        }).ToList();
+
+
+        //        items.Add(new
+        //        {
+        //            TYPE = "4",
+        //            MASTER_CODE = Properties.Settings.Default.BayiKodu,
+        //            QUANTITY = 1M,
+        //            PRICE = fatura.BayiKarKDV,
+        //            UNIT_CODE = "ADET"
+        //        });
+
+        //        items.Add(new
+        //        {
+        //            TYPE = "4",
+        //            MASTER_CODE = Properties.Settings.Default.FirmaKodu,
+        //            QUANTITY = 1M,
+        //            PRICE = fatura.FirmaKarKDV,
+        //            UNIT_CODE = "ADET"
+        //        });
+
+        //        var accepTeInv = await GetAcceptEInvAndProfileIdAsync(fatura.CariKodu);
+
+        //        var body = new
+        //        {
+        //            TYPE = "8",
+        //            NUMBER = fatura.FaturaNumarasi,
+        //            DOC_NUMBER = fatura.FaturaNumarasi,
+        //            DOC_TRACK_NR = "TESLA",
+        //            DATE = fatura.TarihSaat,
+        //            ARP_CODE = fatura.CariKodu,
+        //            CURRSEL_TOTALS = "1",
+        //            FACTORY = SelectedFabrikaNR,
+        //            DIVISION = SelectedBolumNR,
+        //            DEPARTMENT = SelectedIşyeriNR,
+        //            SOURCE_WH = SelectedAmbarNR,
+        //            EINVOICE = accepTeInv.ACCEPTEINV == "1" ? "1" : "2", // ACCEPTEINV = "1" ise EINVOICE = "1"
+        //            PROFILE_ID = accepTeInv.PROFILEID == "1" ? "1" : "2", // PROFILEID = "1" ise PROFILE_ID = "1"
+        //            EINSTEAD_OF_DISPATCH = accepTeInv.ACCEPTEINV == "1" ? "1" : null,
+        //            EDURATION_TYPE = "0",
+        //            EINVOICE_TYPE = "2",
+        //            EBOOK_DOCTYPE = "99",
+        //            ESTATUS = accepTeInv.ACCEPTEINV == "1" ? "10" : "2",
+        //            SHIPPING_AGENT = Properties.Settings.Default.Tasiycikodu,
+        //            EARCHIVEDETR_SENDMOD = accepTeInv.ACCEPTEINV == "1" ? null : "2", // Aynı şekilde
+        //            EARCHIVEDETR_INTPAYMENTTYPE = accepTeInv.ACCEPTEINV == "1" ? null : "4", // Aynı şekilde
+        //            EARCHIVEDETR_INSTEADOFDESP = accepTeInv.ACCEPTEINV == "1" ? null : "1",
+        //            EARCHIVEDETR_EARCHIVESTATUS = accepTeInv.ACCEPTEINV == "1" ? null : "2",
+        //            TRANSACTIONS = new { items }
+        //        };
+
+
+
+        //        var content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
+        //        var response = await client.PostAsync(apiUrl, content);
+
+        //        if (!response.IsSuccessStatusCode)
+        //        {
+        //            var errorContent = await response.Content.ReadAsStringAsync();
+        //            throw new Exception($"Fatura aktarımı başarısız! HTTP {response.StatusCode}: {errorContent}");
+        //        }
+
+
+        //        var responseBody = await response.Content.ReadAsStringAsync();
+        //    }
+        //}
+
+        //private async Task<(string ACCEPTEINV, string PROFILEID)> GetAcceptEInvAndProfileIdAsync(string cariKodu)
+        //{
+        //    string accepTeInv = null;
+        //    string profileId = null;
+
+        //    string logoDatabase = ConfigurationManager.AppSettings["LogoDatabase"];
+        //    string firmaNumarasi = ConfigurationManager.AppSettings["FirmaNumarasi"];
+
+        //    using (var connection = new SqlConnectionClass().baglanti())
+        //    {
+        //        var command = new SqlCommand($"SELECT ACCEPTEINV, PROFILEID FROM {logoDatabase}..LG_{firmaNumarasi}_CLCARD WHERE CODE = @CariKodu", connection);
+        //        command.Parameters.AddWithValue("@CariKodu", cariKodu);
+
+        //        using (var reader = await command.ExecuteReaderAsync())
+        //        {
+        //            if (await reader.ReadAsync())
+        //            {
+        //                accepTeInv = reader["ACCEPTEINV"].ToString();
+        //                profileId = reader["PROFILEID"].ToString();
+        //            }
+        //        }
+        //    }
+        //    return (accepTeInv, profileId);
+        //}
+
+
     }
 }
 
 
-
-    
 
