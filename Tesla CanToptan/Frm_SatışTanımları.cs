@@ -39,7 +39,6 @@ namespace Tesla_CanToptan
                 string logoDatabase = ConfigurationManager.AppSettings["LogoDatabase"];
                 string firmaNumarasi = ConfigurationManager.AppSettings["FirmaNumarasi"];
 
-                // 1. Insert işlemi
                 string insertQuery = $@"
             INSERT INTO [TNM.MALZEME FİYAT] (CODE, NAME, Durum)
             SELECT CODE, NAME, 1
@@ -55,7 +54,7 @@ namespace Tesla_CanToptan
                     insertCommand.ExecuteNonQuery();
                 }
 
-                // 2. Update işlemi
+             
                 string updateQuery = $@"
             UPDATE [TNM.MALZEME FİYAT]
             SET Durum = 0
@@ -69,7 +68,7 @@ namespace Tesla_CanToptan
                     updateCommand.ExecuteNonQuery();
                 }
 
-                // 3. Delete işlemi
+         
                 string deleteQuery = @"
             DELETE FROM [TNM.MALZEME FİYAT]
             WHERE Durum = 0";

@@ -15,6 +15,7 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Configuration;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace Tesla_CanToptan
 {
@@ -329,8 +330,8 @@ namespace Tesla_CanToptan
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "FaturaNumarasi", Caption = "Fatura Numarası", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "ToplamIndirim", Caption = "Toplam İndirim", Visible = true });
             masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "ToplamTutar", Caption = "Toplam Tutar", Visible = true });
-            masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "BayiKarKDV", Caption = "Bayi Kar Kdv", Visible = true });
-            masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "FirmaKarKDV", Caption = "Firma Kar Kav", Visible = true });
+            masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "BayiKarKDV", Caption = "Bayi Kdv", Visible = true });
+            masterView.Columns.Add(new DevExpress.XtraGrid.Columns.GridColumn() { FieldName = "FirmaKarKDV", Caption = "Firma Kdv", Visible = true });
 
 
 
@@ -606,6 +607,69 @@ namespace Tesla_CanToptan
         public string SelectedAmbarNR { get; private set; }
 
 
+        //private async void Btn_LogoAktar_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        //{
+        //    if (gridControl1.MainView.RowCount == 0)
+        //    {
+        //        MessageBox.Show("Lütfen fatura verilerini ekleyin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        //        return;
+        //    }
+        //    WaitForm waitForm = new WaitForm();
+
+        //    _ = Task.Run(() =>
+        //    {
+        //        this.Invoke(new Action(() => waitForm.ShowDialog()));
+        //    });
+
+        //    List<string> errorMessages = new List<string>();
+
+        //    try
+        //    {
+        //        waitForm.UpdateCaption("İşlem Başladı");
+        //        waitForm.UpdateDescription("Token alınıyor...");
+
+        //        string logoKullanici = ConfigurationManager.AppSettings["LogoKullanici"];
+        //        string logoParola = ConfigurationManager.AppSettings["LogoParola"];
+        //        string firmaNumarasi = ConfigurationManager.AppSettings["FirmaNumarasi"];
+        //        string url = ConfigurationManager.AppSettings["Url"];
+        //        string logoDatabase = ConfigurationManager.AppSettings["LogoDatabase"];
+
+        //        foreach (var fatura in faturalar)
+        //        {
+
+        //            string token = await GetAccessTokenAsync(logoKullanici, logoParola, firmaNumarasi, url);
+        //            waitForm.UpdateDescription($"{fatura.FaturaNumarasi} Nolu Fatura Aktarılıyor...");
+
+        //            await PostFaturaAsync(token, fatura, url, errorMessages);
+        //        }
+
+        //        if (errorMessages.Any())
+        //        {
+        //            string errorMessage = "Bazı faturalar aktarılırken hata oluştu:\n\n" + string.Join("\n", errorMessages);
+        //            MessageBox.Show(errorMessage, "Faturalar Aktarılırken Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+        //        }
+        //        else
+        //        {
+        //            MessageBox.Show("Tüm faturalar başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show("Hata: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //    finally
+        //    {
+        //        waitForm.Close();
+
+        //        List<int> failedFaturaIds = GetFailedFaturaIds(errorMessages);
+
+        //        DeleteSuccessfulFaturas(failedFaturaIds);
+
+        //        Refresh_Data();
+        //    }
+        //}
+
         private async void Btn_LogoAktar_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             if (gridControl1.MainView.RowCount == 0)
@@ -635,7 +699,7 @@ namespace Tesla_CanToptan
 
                 foreach (var fatura in faturalar)
                 {
-                    
+
                     string token = await GetAccessTokenAsync(logoKullanici, logoParola, firmaNumarasi, url);
                     waitForm.UpdateDescription($"{fatura.FaturaNumarasi} Nolu Fatura Aktarılıyor...");
 
@@ -646,7 +710,7 @@ namespace Tesla_CanToptan
                 {
                     string errorMessage = "Bazı faturalar aktarılırken hata oluştu:\n\n" + string.Join("\n", errorMessages);
                     MessageBox.Show(errorMessage, "Faturalar Aktarılırken Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    
+
                 }
                 else
                 {
@@ -668,7 +732,6 @@ namespace Tesla_CanToptan
                 Refresh_Data();
             }
         }
-
 
         private async Task<string> GetAccessTokenAsync(string logoKullanici, string logoParola, string firmaNumarasi, string url)
         {
@@ -811,7 +874,7 @@ namespace Tesla_CanToptan
 
             foreach (var message in errorMessages)
             {
-                // Örnek hata mesajı: "Fatura 2 ----- 1001 aktarımı başarısız! Hata: ..."
+                
                 var match = Regex.Match(message, @"Fatura (\d+)");
                 if (match.Success)
                 {

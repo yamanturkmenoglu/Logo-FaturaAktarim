@@ -3,7 +3,7 @@ using System;
 
 namespace Tesla_CanToptan
 {
-    public partial class WaitForm : DevExpress.XtraWaitForm.WaitForm  // Correct inheritance
+    public partial class WaitForm : DevExpress.XtraWaitForm.WaitForm 
     {
         public WaitForm()
         {
