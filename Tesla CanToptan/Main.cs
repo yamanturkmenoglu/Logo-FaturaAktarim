@@ -27,11 +27,47 @@ namespace Tesla_CanToptan
         }
         SqlConnectionClass bgl = new SqlConnectionClass();
         private List<Fatura> faturalar = new List<Fatura>();
+        private bool IsFileLocked(string filePath)
+        {
+            try
+            {
+                using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    return false; // Dosya kullanılabilir
+                }
+            }
+            catch (IOException)
+            {
+                return true; // Dosya başka bir program tarafından kullanılıyor
+            }
+        }
+        private string[] ReadFileSafely(string filePath)
+        {
+            try
+            {
+                List<string> lines = new List<string>();
 
+                using (StreamReader reader = new StreamReader(filePath, Encoding.GetEncoding("ISO-8859-9"), true))
+                {
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        lines.Add(line);
+                    }
+                }
+
+                return lines.ToArray();
+            }
+            catch (Exception ex)
+            {
+                XtraMessageBox.Show($"Dosya okunurken hata oluştu: {ex.Message}");
+                return null;
+            }
+        }
 
         private void Btn_DosayaSec_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
-            DeleteDataFromDatabase();
+            DeleteDataFromDatabase(); // Önce verileri temizle
 
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
@@ -44,28 +80,47 @@ namespace Tesla_CanToptan
 
                     try
                     {
+                        // **Dosyanın kilitli olup olmadığını kontrol et**
+                        if (IsFileLocked(filePath))
+                        {
+                            XtraMessageBox.Show("Dosya başka bir program tarafından kullanılıyor. Lütfen kapatıp tekrar deneyin.");
+                            return;
+                        }
+
                         LB_DosyaAdı.Text = Path.GetFileName(filePath);
                         LB_Yol.Text = filePath;
-                        string[] faturaVerisi = File.ReadAllLines(filePath, Encoding.GetEncoding("ISO-8859-9"));
+
+                        // **Dosyayı güvenli bir şekilde oku**
+                        string[] faturaVerisi = ReadFileSafely(filePath);
+
+                        if (faturaVerisi == null || faturaVerisi.Length == 0)
+                        {
+                            XtraMessageBox.Show("Dosya boş veya okunamadı.");
+                            return;
+                        }
+
+                        // **Parse işlemini güvenli hale getir**
                         faturalar = ParseFaturalar(faturaVerisi);
+                        if (faturalar == null)
+                        {
+                            XtraMessageBox.Show("Fatura verileri işlenirken hata oluştu.");
+                            return;
+                        }
 
                         InsertDataIntoDatabase(faturalar);
                         ExecuteProcedures();
 
-
+                        // **Veritabanından faturaları tekrar al ve ekrana yükle**
                         List<Fatura> updatedFaturalarFromDb = GetFaturalarFromDatabase();
-
-
                         gridControl1.DataSource = updatedFaturalarFromDb;
                         gridControl1.ForceInitialize();
                         LB_FaturaSayısı.Text = updatedFaturalarFromDb.Count.ToString();
-
 
                         faturalar = updatedFaturalarFromDb;
                     }
                     catch (Exception ex)
                     {
-                        XtraMessageBox.Show($"Dosya okuma hatası: {ex.Message}");
+                        XtraMessageBox.Show($"Dosya okuma hatası: {ex.Message}\nStackTrace: {ex.StackTrace}");
                     }
                 }
             }
@@ -110,6 +165,7 @@ namespace Tesla_CanToptan
             return faturalar;
         }
 
+
         private Fatura ParseFatura(string line)
         {
             try
@@ -124,6 +180,7 @@ namespace Tesla_CanToptan
                         FaturaNumarasi = line.Substring(79, 16).Trim(),
                         ToplamTutar = ParseDecimal(line.Substring(95, 12).Trim()),
                         ToplamIndirim = ParseDecimal(line.Substring(108, 12).Trim()),
+                        iptal = line.Substring(147, 1).Trim(),
                     };
                 }
                 else
@@ -204,9 +261,9 @@ namespace Tesla_CanToptan
 
                     string insertFaturaBaslikQuery = @"
     INSERT INTO [HRK.FaturaBasliklari] 
-    (TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, BayiKarKDV, FirmaKarKDV, ToplamTutar)
+    (TarihSaat, CariKodu, CariUnvan, FaturaNumarasi, ToplamIndirim, BayiKarKDV, FirmaKarKDV, ToplamTutar , iptal)
     VALUES 
-    (@TarihSaat, @CariKodu, @CariUnvan, @FaturaNumarasi, @ToplamIndirim, @BayiKarKDV, @FirmaKarKDV, @ToplamTutar);
+    (@TarihSaat, @CariKodu, @CariUnvan, @FaturaNumarasi, @ToplamIndirim, @BayiKarKDV, @FirmaKarKDV, @ToplamTutar, @iptal);
     SELECT SCOPE_IDENTITY();";
 
 
@@ -219,6 +276,7 @@ namespace Tesla_CanToptan
                     command.Parameters.AddWithValue("@BayiKarKDV", DBNull.Value);
                     command.Parameters.AddWithValue("@FirmaKarKDV", DBNull.Value);
                     command.Parameters.AddWithValue("@ToplamTutar", fatura.ToplamTutar);
+                    command.Parameters.AddWithValue("@iptal", fatura.iptal);
 
                     int faturaId = Convert.ToInt32(command.ExecuteScalar());
 
@@ -476,6 +534,7 @@ namespace Tesla_CanToptan
             {
                 string[] procedures = new string[]
                 {
+            "EXEC SP_Sil_Iptal_Faturalar",
             "EXEC GuncelleIndirimliBirimFiyatlar",
             "EXEC HesaplaTümFaturalarBayiKarKDV",
             "EXEC UpdateBirimFiyat",
@@ -509,6 +568,7 @@ namespace Tesla_CanToptan
             public decimal ToplamTutar { get; set; }
             public decimal BayiKarKDV { get; set; }
             public decimal FirmaKarKDV { get; set; }
+            public string iptal { get; set; }
             public List<FaturaKalemi> Kalemler { get; set; } = new List<FaturaKalemi>();
         }
 
@@ -708,10 +768,12 @@ namespace Tesla_CanToptan
 
                 if (errorMessages.Any())
                 {
-                    string errorMessage = "Bazı faturalar aktarılırken hata oluştu:\n\n" + string.Join("\n", errorMessages);
-                    MessageBox.Show(errorMessage, "Faturalar Aktarılırken Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
+                    
+                    Frm_hata_ frmHata = new Frm_hata_(errorMessages);
+                    frmHata.ShowDialog();
                 }
+             
+
                 else
                 {
                     MessageBox.Show("Tüm faturalar başarıyla aktarıldı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);

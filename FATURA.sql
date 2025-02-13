@@ -9,6 +9,7 @@ CREATE TABLE [HRK.FaturaBasliklari] (
 	BayiKarKDV DECIMAL(18,4),
 	FirmaKarKDV DECIMAL(18,4),
 	ToplamTutar DECIMAL(18,4) NOT NULL,
+	iptal NVARCHAR(50) NOT NULL,
 );
 
 -- 2. HRK.FaturaKalemleri Tablosu
